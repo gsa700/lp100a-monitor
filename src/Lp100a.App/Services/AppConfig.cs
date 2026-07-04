@@ -18,6 +18,7 @@ public sealed class AppConfig
     public double? VectorH { get; set; }
     public string? Port { get; set; }
     public string? Serial { get; set; }   // FTDI/USB chip serial, so the cable is followed across COM renumbering
+    public bool CheckUpdatesAtStartup { get; set; }
     public DisplayConfig Display { get; set; } = new();
 
     public void ApplyTo(DisplaySettings d)

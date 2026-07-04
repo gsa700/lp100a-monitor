@@ -37,7 +37,7 @@ public partial class App : Application
             _config.ApplyTo(_display);
 
             _meter = new MeterService();
-            _setupVm = new SetupViewModel(_meter, _display);
+            _setupVm = new SetupViewModel(_meter, _display) { CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup };
             _vectorVm = new VectorViewModel(_meter);
 
             // Follow the cable by its chip serial across COM renumbering, then auto-connect.
@@ -55,7 +55,15 @@ public partial class App : Application
             _display.PropertyChanged += OnDisplayChanged;
             _mainWindow.Closing += (_, _) => SaveAndCleanup();
             // Reopen a persisted Vector window only after main is shown (an owned window needs a visible owner).
-            _mainWindow.Opened += (_, _) => { if (_display.ShowVectorWindow) EnsureVectorVisible(); };
+            _mainWindow.Opened += async (_, _) =>
+            {
+                if (_display.ShowVectorWindow) EnsureVectorVisible();
+                if (_config.CheckUpdatesAtStartup)
+                {
+                    await _setupVm.CheckUpdatesAsync();
+                    if (_setupVm.UpdateAvailable) ShowSetup();   // surface it
+                }
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -78,6 +86,9 @@ public partial class App : Application
 
     /// <summary>Called by the main-window "Vector" button; the flag drives the window.</summary>
     public void ShowVector() => _display.ShowVectorWindow = true;
+
+    /// <summary>Close the app so the staged update helper can swap the executable and relaunch.</summary>
+    public void ExitForUpdate() => _mainWindow.Close();
 
     /// <summary>A child window is closing; capture its bounds and drop the reference.</summary>
     public void NotifySetupClosing(SetupWindow w)
@@ -189,6 +200,7 @@ public partial class App : Application
             var port = _meter.CurrentPort ?? _setupVm.SelectedPort;
             _config.Port = port;
             if (port is not null && PortIdentity.SerialFor(port) is { } serial) _config.Serial = serial;
+            _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
             _config.CaptureFrom(_display);
             ConfigStore.Save(_config);
         }

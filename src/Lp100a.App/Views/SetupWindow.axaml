@@ -46,5 +46,19 @@
       <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}"/>
     </StackPanel>
 
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
+    <!-- Updates -->
+    <TextBlock Text="UPDATES" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <StackPanel Orientation="Horizontal" Spacing="10">
+      <Button Content="Check for updates" Command="{Binding CheckUpdatesCommand}"/>
+      <CheckBox Content="Check at startup" IsChecked="{Binding CheckUpdatesAtStartup}" VerticalAlignment="Center"/>
+    </StackPanel>
+    <TextBlock Text="{Binding UpdateStatus}" Foreground="{Binding UpdateStatusBrush}" TextWrapping="Wrap"/>
+    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding UpdateAvailable}">
+      <Button Content="Update now" Command="{Binding UpdateNowCommand}"/>
+      <Button Content="Release notes" Command="{Binding OpenReleaseCommand}"/>
+    </StackPanel>
+
   </StackPanel>
 </Window>
