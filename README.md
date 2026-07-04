@@ -71,6 +71,10 @@ src/
 The `Core` library has no UI dependency, so a future headless logger can reuse the
 exact serial/parsing path.
 
+## License
+
+Released under the **GNU General Public License v3.0** — see [LICENSE](LICENSE).
+
 ## Credits
 
 Created by David Erickson (AB0R) in collaboration with Claude (Anthropic).
