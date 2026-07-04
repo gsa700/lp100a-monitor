@@ -5,6 +5,12 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.3.0-beta] - 2026-07-04
+
+### Added
+- **App icon** — a Smith-chart vector emblem, shown in the window title bar, the
+  taskbar, and on the executable.
+
 ## [0.2.0-beta] - 2026-07-04
 
 ### Added
