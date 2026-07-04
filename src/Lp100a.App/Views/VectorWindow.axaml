@@ -6,6 +6,7 @@
         x:DataType="vm:VectorViewModel"
         Width="560" Height="600" MinWidth="380" MinHeight="420"
         Background="{StaticResource BgBrush}"
+        Icon="/Assets/app-icon.png"
         Title="LP-100A Vector">
 
   <DockPanel Margin="12">

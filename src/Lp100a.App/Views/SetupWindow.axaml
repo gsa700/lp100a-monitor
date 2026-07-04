@@ -6,6 +6,7 @@
         Width="360" SizeToContent="Height"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
+        Icon="/Assets/app-icon.png"
         Title="LP-100A Setup">
 
   <StackPanel Margin="16" Spacing="14">

@@ -5,6 +5,7 @@
         x:DataType="vm:MainWindowViewModel"
         Width="470" SizeToContent="Height" CanResize="False"
         Background="{StaticResource BgBrush}"
+        Icon="/Assets/app-icon.png"
         Title="LP-100A Monitor">
 
   <Grid Margin="16,12" RowDefinitions="Auto,Auto,Auto,Auto">
