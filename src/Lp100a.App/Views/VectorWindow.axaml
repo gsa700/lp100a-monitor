@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lp100a.App.ViewModels"
+        xmlns:ctrl="using:Lp100a.App.Controls"
+        x:Class="Lp100a.App.Views.VectorWindow"
+        x:DataType="vm:VectorViewModel"
+        Width="560" Height="600" MinWidth="380" MinHeight="420"
+        Background="{StaticResource BgBrush}"
+        Title="LP-100A Vector">
+
+  <DockPanel Margin="12">
+
+    <!-- Readout strip -->
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" CornerRadius="6"
+            Padding="12,8" Margin="0,10,0,0">
+      <Grid ColumnDefinitions="*,*,*">
+        <StackPanel Grid.Column="0">
+          <TextBlock Text="R + jX" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}"/>
+          <TextBlock Text="{Binding RxText}" FontFamily="Consolas" FontSize="16" Foreground="{StaticResource GreenBrush}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1">
+          <TextBlock Text="Z ∠ phase" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}"/>
+          <TextBlock Text="{Binding ZText}" FontFamily="Consolas" FontSize="16" Foreground="{StaticResource TextBrush}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+          <TextBlock Text="MATCH" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right"/>
+          <TextBlock Text="{Binding SwrText}" FontFamily="Consolas" FontSize="16" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Right"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <ctrl:SmithChartControl Resistance="{Binding Resistance}" Reactance="{Binding Reactance}"/>
+
+  </DockPanel>
+</Window>

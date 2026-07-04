@@ -1,0 +1,31 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Lp100a.App.App"
+             RequestedThemeVariant="Dark">
+
+  <Application.Resources>
+    <!-- Original pre-W2 palette experiment: near-black bg, near-white text, orange-red + cyan accents.
+         (W2 palette was Bg #1C1C1E, Panel #2C2C30, Track #3C3C42, Text #DCDCDC, Amber #FFB000,
+         Red #EB4646, Dim #8C8C94, Cyan #00D2EB — restore these to go back.) Kept in sync with Palette.cs. -->
+    <SolidColorBrush x:Key="BgBrush"    Color="#171717"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="TrackBrush" Color="#333333"/>
+    <SolidColorBrush x:Key="TextBrush"  Color="#EAEAEA"/>
+    <SolidColorBrush x:Key="AmberBrush" Color="#FF5A2A"/>
+    <SolidColorBrush x:Key="GreenBrush" Color="#3CC850"/>
+    <SolidColorBrush x:Key="RedBrush"   Color="#E64C4C"/>
+    <SolidColorBrush x:Key="DimBrush"   Color="#999999"/>
+    <SolidColorBrush x:Key="CyanBrush"  Color="#2AC8C8"/>
+    <!-- App name + FORWARD POWER hero (independent of the orange-red accent) -->
+    <SolidColorBrush x:Key="HeroBrush"  Color="#3CC850"/>
+    <!-- Forward power bar -->
+    <SolidColorBrush x:Key="BlueBrush"  Color="#4A90E2"/>
+    <!-- SWR bar (static; the SWR number stays threshold-colored) -->
+    <SolidColorBrush x:Key="GoldBrush"  Color="#FFB000"/>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+</Application>

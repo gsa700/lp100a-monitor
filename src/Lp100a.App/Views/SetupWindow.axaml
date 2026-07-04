@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lp100a.App.ViewModels"
+        x:Class="Lp100a.App.Views.SetupWindow"
+        x:DataType="vm:SetupViewModel"
+        Width="360" SizeToContent="Height"
+        CanResize="False" ShowInTaskbar="False"
+        Background="{StaticResource BgBrush}"
+        Title="LP-100A Setup">
+
+  <StackPanel Margin="16" Spacing="14">
+
+    <!-- Connection -->
+    <TextBlock Text="CONNECTION" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <ComboBox ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}"
+                MinWidth="150" PlaceholderText="Port"/>
+      <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+      <Button Content="{Binding ConnectLabel}" Command="{Binding ConnectCommand}"/>
+    </StackPanel>
+    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" TextWrapping="Wrap"/>
+
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
+    <!-- Display -->
+    <TextBlock Text="DISPLAY" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
+               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+    <StackPanel Spacing="4">
+      <CheckBox Content="Forward power bar" IsChecked="{Binding Display.ShowPowerBar}"/>
+      <CheckBox Content="SWR bar"          IsChecked="{Binding Display.ShowSwrBar}"/>
+      <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}"/>
+      <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}"/>
+      <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}"/>
+      <CheckBox Content="Peak forward"     IsChecked="{Binding Display.ShowPeak}"/>
+      <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}"/>
+      <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}"/>
+      <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}"/>
+      <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}"/>
+    </StackPanel>
+
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
+    <StackPanel Spacing="4">
+      <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}"/>
+      <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}"/>
+    </StackPanel>
+
+  </StackPanel>
+</Window>

@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lp100a.App.ViewModels"
+        x:Class="Lp100a.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Width="470" SizeToContent="Height" CanResize="False"
+        Background="{StaticResource BgBrush}"
+        Title="LP-100A Monitor">
+
+  <Grid Margin="16,12" RowDefinitions="Auto,Auto,Auto,Auto">
+
+    <!-- Header -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
+      <TextBlock Grid.Column="0" Text="{Binding TitleText}" FontSize="20" FontWeight="Bold"
+                 Foreground="{StaticResource HeroBrush}" VerticalAlignment="Center">
+        <TextBlock.Effect>
+          <DropShadowEffect Color="#3CC850" BlurRadius="12" OffsetX="0" OffsetY="0" Opacity="0.6"/>
+        </TextBlock.Effect>
+      </TextBlock>
+      <TextBlock Grid.Column="1" Text="{Binding CallsignText}" Foreground="{StaticResource DimBrush}"
+                 VerticalAlignment="Center" Margin="0,0,10,0"/>
+      <Ellipse Grid.Column="2" Width="12" Height="12" Fill="{Binding ConnDotBrush}"
+               VerticalAlignment="Center" Margin="0,0,10,0"/>
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+        <Button Content="Vector" Click="OnVectorClick"/>
+        <Button Content="Setup" Click="OnSetupClick"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Hero readouts -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,14,0,0">
+      <StackPanel Grid.Column="0">
+        <TextBlock Text="FORWARD POWER" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}"/>
+        <TextBlock Text="{Binding PowerText}" FontFamily="Consolas" FontSize="34" FontWeight="Bold"
+                   Foreground="{StaticResource HeroBrush}"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+        <TextBlock Text="SWR" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}"
+                   HorizontalAlignment="Right"/>
+        <TextBlock Text="{Binding SwrText}" FontFamily="Consolas" FontSize="34" FontWeight="Bold"
+                   Foreground="{Binding SwrBrush}" HorizontalAlignment="Right"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Bars -->
+    <StackPanel Grid.Row="2" Spacing="2" Margin="0,10,0,0">
+      <ProgressBar Minimum="0" Maximum="{Binding PowerBarMax}" Value="{Binding PowerBarValue}"
+                   Height="14" ShowProgressText="False"
+                   Foreground="{StaticResource BlueBrush}" Background="{StaticResource TrackBrush}"
+                   IsVisible="{Binding Display.ShowPowerBar}"/>
+      <ProgressBar Minimum="1" Maximum="3" Value="{Binding SwrBarValue}"
+                   Height="7" ShowProgressText="False"
+                   Foreground="{StaticResource GoldBrush}" Background="{StaticResource TrackBrush}"
+                   IsVisible="{Binding Display.ShowSwrBar}"/>
+    </StackPanel>
+
+    <!-- Secondary rows -->
+    <StackPanel Grid.Row="3" Margin="0,12,0,0">
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowTx}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="TX TIMER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding TxTimerText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{Binding TxBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowReflected}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="REFLECTED POWER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding ReflectedText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowReturnLoss}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="RETURN LOSS" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding ReturnLossText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowDbm}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="dBm" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding DbmText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowPeak}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="PEAK FORWARD" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding PeakText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowZ}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="|Z|" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding ZText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowPhase}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="PHASE" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding PhaseText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowRx}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="R + jX" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding RxText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Right"/>
+      </Grid>
+    </StackPanel>
+
+  </Grid>
+</Window>
