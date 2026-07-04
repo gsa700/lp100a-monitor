@@ -5,6 +5,17 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.2.0-beta] - 2026-07-04
+
+### Added
+- **In-app updater** (Setup → Updates): check GitHub for a newer release, download the
+  build for your platform, and restart to apply. Optional check-at-startup.
+- Project licensed under **GPL-3.0**.
+
+### Note
+- To pick up this and future updates automatically, install this build once manually;
+  the previous 0.1.0-beta build predates the updater.
+
 ## [0.1.0-beta] - 2026-07-04
 
 First public beta. A cross-platform (.NET 8 + Avalonia) desktop monitor for the
