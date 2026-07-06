@@ -7,7 +7,12 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.1.0-beta** — real and in use, but not yet broadly field-tested.
+> Status: **0.3.0-beta** — real and in use, but not yet broadly field-tested.
+
+<p align="center">
+  <img src="docs/screenshot-all.png" width="900"
+       alt="LP-100A Monitor: the Vector (Smith chart), Main, and Setup windows side by side">
+</p>
 
 ## Download & run
 
@@ -22,16 +27,23 @@ On first run, open **Setup**, pick the LP-100A's COM/serial port, and Connect. T
 app pins that adapter by its chip serial and **auto-connects** next time. Keep the
 meter on its **Watts screen** so power and vector data come across the serial link.
 
+Once installed, you can update in place from **Setup → Updates → Check for updates** —
+no need to download manually again.
+
 ## Windows
 
 - **Main window** — power/SWR hero readouts, forward-power and SWR bars, and
   toggleable rows (reflected power, return loss, dBm, peak, |Z|, phase, R + jX).
 - **Vector window** — the Smith chart: constant-R/X grid with ohm labels, a live
   operating-point marker, and a constant-SWR circle. Great for antenna/tuner tuning.
-- **Setup window** — port selection and display toggles.
+- **Setup window** — port selection, display toggles, and in-app updates.
 
 Setup and Vector are children of the main window; closing the main window closes
 everything. Window positions and display choices persist between runs.
+
+|                      Idle                      |                 Transmitting (dummy load)                  |
+| :--------------------------------------------: | :--------------------------------------------------------: |
+| ![Main window, idle](docs/screenshot-main.png) | ![Main window, transmitting](docs/screenshot-main-tx.png) |
 
 ## Serial protocol (confirmed on-air, single LPC1 coupler)
 
