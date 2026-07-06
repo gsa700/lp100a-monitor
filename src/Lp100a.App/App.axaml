@@ -16,8 +16,10 @@
     <SolidColorBrush x:Key="RedBrush"   Color="#E64C4C"/>
     <SolidColorBrush x:Key="DimBrush"   Color="#999999"/>
     <SolidColorBrush x:Key="CyanBrush"  Color="#2AC8C8"/>
-    <!-- App name + FORWARD POWER hero (independent of the orange-red accent) -->
+    <!-- FORWARD POWER hero -->
     <SolidColorBrush x:Key="HeroBrush"  Color="#3CC850"/>
+    <!-- App-name title (independent of the green hero) -->
+    <SolidColorBrush x:Key="TitleBrush" Color="#4A90E2"/>
     <!-- Forward power bar -->
     <SolidColorBrush x:Key="BlueBrush"  Color="#4A90E2"/>
     <!-- SWR bar (static; the SWR number stays threshold-colored) -->
