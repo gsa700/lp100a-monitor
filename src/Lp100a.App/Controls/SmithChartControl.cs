@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace Lp100a.App.Controls;
 
@@ -33,6 +34,16 @@ public sealed class SmithChartControl : Control
         set => SetValue(ReactanceProperty, value);
     }
 
+    /// <summary>When true, marker movement is recorded into the fading trail (set from TX state).</summary>
+    public static readonly StyledProperty<bool> ActiveProperty =
+        AvaloniaProperty.Register<SmithChartControl, bool>(nameof(Active));
+
+    public bool Active
+    {
+        get => GetValue(ActiveProperty);
+        set => SetValue(ActiveProperty, value);
+    }
+
     static SmithChartControl()
     {
         AffectsRender<SmithChartControl>(ResistanceProperty, ReactanceProperty);
@@ -51,6 +62,12 @@ public sealed class SmithChartControl : Control
     private static readonly IBrush SwrBrush = new SolidColorBrush(Color.FromRgb(0x3C, 0xC8, 0x50));
     private static readonly IBrush MarkerBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0x5A, 0x2A));
     private static readonly IBrush BackBrush = new SolidColorBrush(Color.FromRgb(0x14, 0x14, 0x14));
+
+    // Fading trail of recent operating points (Γ-plane) — see the impedance move while tuning.
+    private static readonly TimeSpan TrailLife = TimeSpan.FromSeconds(1.2);
+    private const double TrailEps = 0.006;
+    private readonly List<(double x, double y, DateTime t)> _trail = new();
+    private DispatcherTimer? _trailTimer;
 
     public override void Render(DrawingContext context)
     {
@@ -99,12 +116,7 @@ public sealed class SmithChartControl : Control
         context.DrawEllipse(null, outerPen, new Point(cx, cy), radius, radius);
 
         // Current operating point in the Γ plane.
-        var rn = Resistance / Z0;
-        var xn = Reactance / Z0;
-        var den = (rn + 1.0) * (rn + 1.0) + xn * xn;
-        var hasPoint = den > 1e-9;
-        var gRe = hasPoint ? (rn * rn - 1.0 + xn * xn) / den : 0.0;
-        var gIm = hasPoint ? 2.0 * xn / den : 0.0;
+        var (hasPoint, gRe, gIm) = Gamma(Resistance, Reactance);
         var gMag = Math.Sqrt(gRe * gRe + gIm * gIm);
 
         // Constant-SWR circle through the operating point (centered at the match point).
@@ -145,9 +157,77 @@ public sealed class SmithChartControl : Control
             }
         }
 
+        // Fading trail of recent operating points, drawn under the marker.
+        if (_trail.Count > 0)
+        {
+            var now = DateTime.UtcNow;
+            var markerColor = ((SolidColorBrush)MarkerBrush).Color;
+            foreach (var p in _trail)
+            {
+                var age = (now - p.t).TotalSeconds;
+                if (age >= TrailLife.TotalSeconds) continue;
+                var op = (1.0 - age / TrailLife.TotalSeconds) * 0.45;
+                context.DrawEllipse(new SolidColorBrush(markerColor, op), null, Map(p.x, p.y), 4, 4);
+            }
+        }
+
         // Operating-point marker on top.
         if (hasPoint)
             context.DrawEllipse(MarkerBrush, new Pen(Brushes.White, 1.5), Map(gRe, gIm), 6, 6);
+    }
+
+    private static (bool ok, double gx, double gy) Gamma(double r, double x)
+    {
+        var rn = r / Z0;
+        var xn = x / Z0;
+        var den = (rn + 1.0) * (rn + 1.0) + xn * xn;
+        if (den <= 1e-9) return (false, 0.0, 0.0);
+        return (true, (rn * rn - 1.0 + xn * xn) / den, 2.0 * xn / den);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ReactanceProperty && Active) PushTrailPoint();
+    }
+
+    private void PushTrailPoint()
+    {
+        var (ok, gx, gy) = Gamma(Resistance, Reactance);
+        if (!ok) return;
+        if (_trail.Count > 0)
+        {
+            var last = _trail[^1];
+            var dx = gx - last.x;
+            var dy = gy - last.y;
+            if (dx * dx + dy * dy < TrailEps * TrailEps) return;   // barely moved — don't spam points
+        }
+        _trail.Add((gx, gy, DateTime.UtcNow));
+        if (_trail.Count > 120) _trail.RemoveAt(0);
+
+        _trailTimer ??= CreateTrailTimer();
+        if (!_trailTimer.IsEnabled) _trailTimer.Start();
+        InvalidateVisual();
+    }
+
+    private DispatcherTimer CreateTrailTimer()
+    {
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        t.Tick += (_, _) =>
+        {
+            var now = DateTime.UtcNow;
+            _trail.RemoveAll(p => now - p.t > TrailLife);
+            InvalidateVisual();
+            if (_trail.Count == 0) _trailTimer?.Stop();
+        };
+        return t;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        _trailTimer?.Stop();
+        _trail.Clear();
+        base.OnDetachedFromVisualTree(e);
     }
 
     private static void DrawText(DrawingContext context, string text, Point at, IBrush brush, double size, bool centered)

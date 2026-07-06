@@ -30,7 +30,7 @@
       </Grid>
     </Border>
 
-    <ctrl:SmithChartControl Resistance="{Binding Resistance}" Reactance="{Binding Reactance}"/>
+    <ctrl:SmithChartControl Resistance="{Binding Resistance}" Reactance="{Binding Reactance}" Active="{Binding IsTransmitting}"/>
 
   </DockPanel>
 </Window>

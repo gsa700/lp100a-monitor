@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Lp100a.App.ViewModels"
+        xmlns:ctrl="using:Lp100a.App.Controls"
         x:Class="Lp100a.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Width="470" SizeToContent="Height" CanResize="False"
@@ -41,10 +42,10 @@
 
     <!-- Bars -->
     <StackPanel Grid.Row="2" Spacing="2" Margin="0,10,0,0">
-      <ProgressBar Minimum="0" Maximum="{Binding PowerBarMax}" Value="{Binding PowerBarValue}"
-                   Height="14" ShowProgressText="False"
-                   Foreground="{StaticResource BlueBrush}" Background="{StaticResource TrackBrush}"
-                   IsVisible="{Binding Display.ShowPowerBar}"/>
+      <ctrl:PeakBar Height="14"
+                    Value="{Binding PowerBarValue}" Maximum="{Binding PowerBarMax}" Peak="{Binding PowerBarPeak}"
+                    Fill="{StaticResource BlueBrush}" Track="{StaticResource TrackBrush}" PeakBrush="{StaticResource TextBrush}"
+                    IsVisible="{Binding Display.ShowPowerBar}"/>
       <ProgressBar Minimum="1" Maximum="3" Value="{Binding SwrBarValue}"
                    Height="7" ShowProgressText="False"
                    Foreground="{StaticResource GoldBrush}" Background="{StaticResource TrackBrush}"

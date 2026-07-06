@@ -26,8 +26,12 @@ public sealed class VectorViewModel : ViewModelBase
     private string _swrText = "SWR —";
     public string SwrText { get => _swrText; private set => SetProperty(ref _swrText, value); }
 
+    private bool _isTransmitting;
+    public bool IsTransmitting { get => _isTransmitting; private set => SetProperty(ref _isTransmitting, value); }
+
     private void OnReading(Lp100Reading r)
     {
+        IsTransmitting = r.IsTransmitting;
         Resistance = r.ResistanceOhms;
         Reactance = r.ReactanceOhms;
         RxText = $"{r.ResistanceOhms:0.0} {(r.ReactanceOhms >= 0 ? "+" : "−")} j{Math.Abs(r.ReactanceOhms):0.0} Ω";
