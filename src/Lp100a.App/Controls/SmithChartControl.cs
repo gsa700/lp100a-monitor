@@ -64,7 +64,7 @@ public sealed class SmithChartControl : Control
     private static readonly IBrush BackBrush = new SolidColorBrush(Color.FromRgb(0x14, 0x14, 0x14));
 
     // Fading trail of recent operating points (Γ-plane) — see the impedance move while tuning.
-    private static readonly TimeSpan TrailLife = TimeSpan.FromSeconds(1.2);
+    private static readonly TimeSpan TrailLife = TimeSpan.FromSeconds(3.0);
     private const double TrailEps = 0.006;
     private readonly List<(double x, double y, DateTime t)> _trail = new();
     private DispatcherTimer? _trailTimer;
