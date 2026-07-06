@@ -5,6 +5,18 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.4.0-beta] - 2026-07-06
+
+### Added
+- **Peak-hold marker** on the forward-power bar — jumps to each new power peak, holds
+  briefly, then eases back toward the live reading.
+- **Fade trail** on the Smith chart — recent operating points leave a short trail that
+  fades out, so you can watch the impedance move while tuning (shown during transmit).
+- An always-visible **Open releases page** link in Setup → Updates.
+
+### Changed
+- Recolored the main-window title blue and dropped its glow, to calm the green.
+
 ## [0.3.0-beta] - 2026-07-04
 
 ### Added
