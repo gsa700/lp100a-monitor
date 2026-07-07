@@ -14,3 +14,4 @@ artifacts/
 ## Serial capture logs from the exploration scripts
 tx-capture-*.log
 stream-capture-*.log
+command-probe-*.log
