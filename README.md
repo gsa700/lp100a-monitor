@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.4.0-beta** — real and in use, but not yet broadly field-tested.
+> Status: **0.5.0-beta** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -38,7 +38,8 @@ no need to download manually again.
 - **Vector window** — the Smith chart: constant-R/X grid with ohm labels, a live
   operating-point marker with a fading trail, and a constant-SWR circle. Great for
   antenna/tuner tuning.
-- **Setup window** — port selection, display toggles, and in-app updates.
+- **Setup window** — port selection, display toggles, an SWR alarm (enable +
+  threshold), peak-hold on/off, and in-app updates.
 
 Setup and Vector are children of the main window; closing the main window closes
 everything. Window positions and display choices persist between runs.

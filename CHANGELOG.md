@@ -5,6 +5,16 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.5.0-beta] - 2026-07-06
+
+### Added
+- **SWR alarm** — enable it in Setup and set a threshold; a red HIGH SWR banner
+  appears on the main window when the live SWR crosses it while transmitting.
+- **Peak hold on/off** — toggle the power-bar peak-hold marker from Setup.
+
+### Changed
+- Lengthened the Smith-chart fade trail from ~1.2 s to ~3 s.
+
 ## [0.4.0-beta] - 2026-07-06
 
 ### Added
