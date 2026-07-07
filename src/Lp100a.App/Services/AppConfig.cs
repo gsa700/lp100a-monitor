@@ -36,6 +36,9 @@ public sealed class AppConfig
         d.ShowRx = Display.ShowRx;
         d.ShowVectorWindow = Display.ShowVectorWindow;
         d.AlwaysOnTop = Display.AlwaysOnTop;
+        d.PeakHoldEnabled = Display.PeakHoldEnabled;
+        d.SwrAlarmEnabled = Display.SwrAlarmEnabled;
+        d.SwrAlarmThreshold = Display.SwrAlarmThreshold;
     }
 
     public void CaptureFrom(DisplaySettings d)
@@ -53,6 +56,9 @@ public sealed class AppConfig
         Display.ShowRx = d.ShowRx;
         Display.ShowVectorWindow = d.ShowVectorWindow;
         Display.AlwaysOnTop = d.AlwaysOnTop;
+        Display.PeakHoldEnabled = d.PeakHoldEnabled;
+        Display.SwrAlarmEnabled = d.SwrAlarmEnabled;
+        Display.SwrAlarmThreshold = d.SwrAlarmThreshold;
     }
 }
 
@@ -71,6 +77,9 @@ public sealed class DisplayConfig
     public bool ShowRx { get; set; } = true;
     public bool ShowVectorWindow { get; set; }
     public bool AlwaysOnTop { get; set; }
+    public bool PeakHoldEnabled { get; set; } = true;
+    public bool SwrAlarmEnabled { get; set; }
+    public decimal SwrAlarmThreshold { get; set; } = 2.5m;
 }
 
 public static class ConfigStore

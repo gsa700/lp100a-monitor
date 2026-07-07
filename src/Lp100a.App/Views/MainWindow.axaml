@@ -54,6 +54,11 @@
 
     <!-- Secondary rows -->
     <StackPanel Grid.Row="3" Margin="0,12,0,0">
+      <Border IsVisible="{Binding AlarmActive}" Background="#3A1414" BorderBrush="{StaticResource RedBrush}"
+              BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,10">
+        <TextBlock Text="HIGH SWR" Foreground="{StaticResource RedBrush}" FontWeight="Bold"
+                   FontSize="15" HorizontalAlignment="Center"/>
+      </Border>
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowTx}" Margin="0,0,0,6">
         <TextBlock Grid.Column="0" Text="TX TIMER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
         <TextBlock Grid.Column="1" Text="{Binding TxTimerText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{Binding TxBrush}" HorizontalAlignment="Right"/>

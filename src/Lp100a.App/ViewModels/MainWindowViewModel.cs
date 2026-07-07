@@ -100,6 +100,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private IBrush _txBrush = Palette.DimBrush;
     public IBrush TxBrush { get => _txBrush; private set => SetProperty(ref _txBrush, value); }
 
+    private bool _alarmActive;
+    public bool AlarmActive { get => _alarmActive; private set => SetProperty(ref _alarmActive, value); }
+
     private void OnStateChanged()
     {
         StatusText = _meter.Status;
@@ -134,14 +137,21 @@ public sealed class MainWindowViewModel : ViewModelBase
         SwrBarValue = Math.Min(3.0, r.Swr);
 
         // Peak-hold marker on the power bar: jump to new peaks, hold ~1.5 s, then ease toward live.
-        var f = r.ForwardPowerW;
-        if (f >= _heldPeak) { _heldPeak = f; _heldPeakAt = DateTime.Now; }
-        else if ((DateTime.Now - _heldPeakAt).TotalSeconds > 1.5)
+        if (Display.PeakHoldEnabled)
         {
-            _heldPeak -= (_heldPeak - f) * 0.34;
-            if (_heldPeak < f) _heldPeak = f;
+            var f = r.ForwardPowerW;
+            if (f >= _heldPeak) { _heldPeak = f; _heldPeakAt = DateTime.Now; }
+            else if ((DateTime.Now - _heldPeakAt).TotalSeconds > 1.5)
+            {
+                _heldPeak -= (_heldPeak - f) * 0.34;
+                if (_heldPeak < f) _heldPeak = f;
+            }
+            PowerBarPeak = _heldPeak;
         }
-        PowerBarPeak = _heldPeak;
+        else { _heldPeak = 0; PowerBarPeak = 0; }
+
+        // SWR alarm: app-side watch of live SWR against the user threshold, while transmitting.
+        AlarmActive = Display.SwrAlarmEnabled && r.IsTransmitting && r.Swr >= (double)Display.SwrAlarmThreshold;
 
         // Peak forward.
         if (r.ForwardPowerW > _sessionPeak) { _sessionPeak = r.ForwardPowerW; PeakText = $"{_sessionPeak:0.0} W"; }
@@ -190,6 +200,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         ReflectedText = "— W"; ReturnLossText = "— dB"; DbmText = "— dBm";
         ZText = "— Ω"; PhaseText = "—°"; RxText = "—";
         PowerBarValue = 0; PowerBarPeak = 0; _heldPeak = 0; SwrBarValue = 1.0; TxBrush = Palette.DimBrush;
+        AlarmActive = false;
         CallsignText = "";
     }
 }

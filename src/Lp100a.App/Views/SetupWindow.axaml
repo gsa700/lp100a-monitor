@@ -43,8 +43,19 @@
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
     <StackPanel Spacing="4">
+      <CheckBox Content="Peak hold"          IsChecked="{Binding Display.PeakHoldEnabled}"/>
       <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}"/>
       <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}"/>
+    </StackPanel>
+
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
+    <!-- SWR alarm -->
+    <TextBlock Text="SWR ALARM" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <StackPanel Orientation="Horizontal" Spacing="10">
+      <CheckBox Content="Alarm above SWR" IsChecked="{Binding Display.SwrAlarmEnabled}" VerticalAlignment="Center"/>
+      <NumericUpDown Value="{Binding Display.SwrAlarmThreshold}" Minimum="1.5" Maximum="5.0"
+                     Increment="0.1" FormatString="0.0" Width="120" VerticalAlignment="Center"/>
     </StackPanel>
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>

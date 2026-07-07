@@ -48,4 +48,14 @@ public sealed class DisplaySettings : ViewModelBase
 
     private bool _alwaysOnTop;
     public bool AlwaysOnTop { get => _alwaysOnTop; set => SetProperty(ref _alwaysOnTop, value); }
+
+    // --- behavior (not display toggles, but shared+persisted here) ---
+    private bool _peakHoldEnabled = true;
+    public bool PeakHoldEnabled { get => _peakHoldEnabled; set => SetProperty(ref _peakHoldEnabled, value); }
+
+    private bool _swrAlarmEnabled;
+    public bool SwrAlarmEnabled { get => _swrAlarmEnabled; set => SetProperty(ref _swrAlarmEnabled, value); }
+
+    private decimal _swrAlarmThreshold = 2.5m;
+    public decimal SwrAlarmThreshold { get => _swrAlarmThreshold; set => SetProperty(ref _swrAlarmThreshold, value); }
 }
