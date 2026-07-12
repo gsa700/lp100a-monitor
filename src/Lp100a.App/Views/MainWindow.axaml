@@ -64,16 +64,16 @@
         <!-- Clickable: sends 'F' to cycle the meter's Avg → Peak → Tune power mode. -->
         <Button Grid.Column="1" Command="{Binding CyclePowerModeCommand}" Content="{Binding MeterModeText}"
                 FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-                Background="Transparent" BorderThickness="0" Padding="6,0" Cursor="Hand"
-                HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                Background="Transparent" BorderThickness="0" Padding="12,5" MinWidth="60" Cursor="Hand"
+                HorizontalContentAlignment="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
       </Grid>
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowMeterAlarm}" Margin="0,0,0,6">
         <TextBlock Grid.Column="0" Text="METER ALARM" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
         <!-- Clickable: sends 'A' to cycle the meter's SWR alarm setpoint (OFF→1.5→2.0→2.5→3.0→User). -->
         <Button Grid.Column="1" Command="{Binding CycleAlarmCommand}" Content="{Binding AlarmSetpointText}"
                 FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-                Background="Transparent" BorderThickness="0" Padding="6,0" Cursor="Hand"
-                HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                Background="Transparent" BorderThickness="0" Padding="12,5" MinWidth="60" Cursor="Hand"
+                HorizontalContentAlignment="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
       </Grid>
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowReflected}" Margin="0,0,0,6">
         <TextBlock Grid.Column="0" Text="REFLECTED POWER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>

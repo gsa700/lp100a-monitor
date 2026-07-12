@@ -92,16 +92,21 @@ public sealed class SerialReader : IDisposable
             var one = new byte[1];
             while (_running)
             {
-                // Send any queued control commands ('F' only) before polling, so the write
-                // never overlaps a 'P' and the next poll reports the meter's new mode.
+                // Send any queued control commands ('F'/'A') before polling, so the write never
+                // overlaps a 'P' and the meter has time to act on it.
+                var sentCommand = false;
                 while (_outbox.TryDequeue(out var cmd))
                 {
                     one[0] = cmd;
                     _port.Write(one, 0, 1);
-                    Thread.Sleep(10);   // brief gap for the meter to act on it
+                    Thread.Sleep(20);   // settle time for the meter to process the command
+                    sentCommand = true;
                 }
 
                 var now = DateTime.UtcNow;
+                // After a control command, poll straight away so the new state reads back
+                // immediately instead of waiting up to a full poll interval.
+                if (sentCommand) nextPoll = now;
                 if (now >= nextPoll)
                 {
                     _port.Write(poll, 0, poll.Length);

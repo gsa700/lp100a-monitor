@@ -72,8 +72,8 @@
       <TextBlock Text="Meter setpoint" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
       <Button Content="{Binding AlarmSetpointText}" Command="{Binding CycleAlarmCommand}"
               FontFamily="Consolas" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-              Background="Transparent" BorderThickness="0" Padding="4,0" Cursor="Hand"
-              VerticalAlignment="Center" MinWidth="44"/>
+              Background="Transparent" BorderThickness="0" Padding="12,5" Cursor="Hand"
+              VerticalAlignment="Center" MinWidth="56"/>
     </StackPanel>
     <CheckBox Content="Show on-screen SWR alarm" IsChecked="{Binding Display.SwrBannerEnabled}"/>
     <TextBlock Text="Cycling the setpoint drives the meter's own alarm and relay. The on-screen banner echoes it. Note: the meter doesn't report a value for its User setpoint, so the banner can't show for User or Off — the meter's alarm still works."

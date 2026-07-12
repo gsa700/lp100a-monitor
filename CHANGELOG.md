@@ -5,6 +5,14 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.1-beta] - 2026-07-12
+
+### Fixed
+- The clickable METER MODE / METER ALARM controls (and the Setup alarm setpoint) sometimes
+  needed a second click. Enlarged their hit areas, and after a control command the reader now
+  settles briefly and polls immediately, so the value updates right away instead of on the next
+  scheduled poll.
+
 ## [0.9.0-beta] - 2026-07-12
 
 ### Added
