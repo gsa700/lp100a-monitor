@@ -22,6 +22,7 @@ public sealed class SetupViewModel : ViewModelBase
         CheckUpdatesCommand = new RelayCommand(() => _ = CheckUpdatesAsync(), () => !_updateBusy);
         UpdateNowCommand = new RelayCommand(() => _ = UpdateNowAsync(), () => _updateInfo?.AssetUrl is not null && !_updateBusy);
         OpenReleaseCommand = new RelayCommand(OpenRelease);
+        ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
         UpdateStatus = $"You have {UpdateService.CurrentVersion}.";
         RefreshPorts();
         OnStateChanged();
@@ -34,6 +35,7 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand CheckUpdatesCommand { get; }
     public RelayCommand UpdateNowCommand { get; }
     public RelayCommand OpenReleaseCommand { get; }
+    public RelayCommand ResetPeakCommand { get; }
 
     private string? _selectedPort;
     public string? SelectedPort

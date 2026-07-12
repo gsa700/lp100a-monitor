@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private double _sessionPeak;
     private double _heldPeak;
     private DateTime _heldPeakAt;
+    private double _barRef;   // decaying reference that drives the bar's auto-range full-scale
 
     public MainWindowViewModel(MeterService meter, DisplaySettings display)
     {
@@ -27,7 +28,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         _meter.ReadingReceived += OnReading;
         _meter.StateChanged += OnStateChanged;
-        ResetPeakCommand = new RelayCommand(() => { _sessionPeak = 0; _heldPeak = 0; PowerBarPeak = 0; PeakText = "0.0 W"; });
+        _meter.PeakResetRequested += ResetPeak;
+        ResetPeakCommand = new RelayCommand(ResetPeak);
         OnStateChanged();
     }
 
@@ -131,9 +133,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         PhaseText = $"{r.PhaseDeg:+0.0;-0.0}°";
         RxText = $"{r.ResistanceOhms:0.0} {(r.ReactanceOhms >= 0 ? "+" : "−")} j{Math.Abs(r.ReactanceOhms):0.0} Ω";
 
-        // Bars.
+        // Bars. Decaying auto-range full-scale: rise instantly to fit, then ease back down.
         PowerBarValue = r.ForwardPowerW;
-        PowerBarMax = FitBarMax(Math.Max(_sessionPeak, r.ForwardPowerW));
+        if (r.ForwardPowerW >= _barRef) _barRef = r.ForwardPowerW;
+        else _barRef -= (_barRef - r.ForwardPowerW) * 0.06;
+        PowerBarMax = FitBarMax(_barRef);
         SwrBarValue = Math.Min(3.0, r.Swr);
 
         // Peak-hold marker on the power bar: jump to new peaks, hold ~1.5 s, then ease toward live.
@@ -157,6 +161,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (r.ForwardPowerW > _sessionPeak) { _sessionPeak = r.ForwardPowerW; PeakText = $"{_sessionPeak:0.0} W"; }
 
         TrackTx(r);
+    }
+
+    private void ResetPeak()
+    {
+        _sessionPeak = 0;
+        _heldPeak = 0;
+        _barRef = 0;
+        PowerBarPeak = 0;
+        PeakText = "0.0 W";
     }
 
     private static double ReflectedPower(Lp100Reading r)
@@ -199,7 +212,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         PowerText = "— W"; SwrText = "—"; SwrBrush = Palette.DimBrush;
         ReflectedText = "— W"; ReturnLossText = "— dB"; DbmText = "— dBm";
         ZText = "— Ω"; PhaseText = "—°"; RxText = "—";
-        PowerBarValue = 0; PowerBarPeak = 0; _heldPeak = 0; SwrBarValue = 1.0; TxBrush = Palette.DimBrush;
+        PowerBarValue = 0; PowerBarPeak = 0; _heldPeak = 0; _barRef = 0; SwrBarValue = 1.0; TxBrush = Palette.DimBrush;
         AlarmActive = false;
         CallsignText = "";
     }

@@ -24,6 +24,10 @@ public sealed class MeterService : IDisposable
     /// <summary>Fires on the UI thread when connection/status changes.</summary>
     public event Action? StateChanged;
 
+    /// <summary>Raised when a view (e.g. Setup) asks to clear the session peak-forward.</summary>
+    public event Action? PeakResetRequested;
+    public void RequestPeakReset() => PeakResetRequested?.Invoke();
+
     public MeterService()
     {
         _reader.ReadingReceived += r => Dispatcher.UIThread.Post(() =>

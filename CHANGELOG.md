@@ -5,6 +5,17 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.6.0-beta] - 2026-07-07
+
+### Added
+- A **(reset)** link next to Peak forward in Setup — clears the PEAK FORWARD readout
+  and drops the power-bar scale back down.
+
+### Changed
+- The forward-power bar now **auto-ranges with decay**: it rises instantly to fit, then
+  eases the full-scale back down when power drops, instead of staying at the session's
+  highest range until reset.
+
 ## [0.5.0-beta] - 2026-07-06
 
 ### Added

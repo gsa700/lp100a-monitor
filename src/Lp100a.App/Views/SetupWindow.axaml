@@ -33,7 +33,12 @@
       <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}"/>
       <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}"/>
       <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}"/>
-      <CheckBox Content="Peak forward"     IsChecked="{Binding Display.ShowPeak}"/>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <CheckBox Content="Peak forward" IsChecked="{Binding Display.ShowPeak}"/>
+        <Button Content="(reset)" Command="{Binding ResetPeakCommand}"
+                Background="Transparent" BorderThickness="0" Padding="0"
+                Foreground="{StaticResource BlueBrush}" Cursor="Hand" VerticalAlignment="Center"/>
+      </StackPanel>
       <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}"/>
       <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}"/>
       <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}"/>
