@@ -5,6 +5,13 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.2-beta] - 2026-07-12
+
+### Changed
+- Trimmed the padding on the clickable METER MODE / METER ALARM controls so their rows line up
+  with the other readout rows again (0.9.1 made them taller). Kept the wider hit area and the
+  instant-readback feedback.
+
 ## [0.9.1-beta] - 2026-07-12
 
 ### Fixed
