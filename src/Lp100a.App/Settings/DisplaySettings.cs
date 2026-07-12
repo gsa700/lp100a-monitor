@@ -33,6 +33,12 @@ public sealed class DisplaySettings : ViewModelBase
     private bool _showTx = true;
     public bool ShowTx { get => _showTx; set => SetProperty(ref _showTx, value); }
 
+    private bool _showMeterMode = true;   // meter's Avg/Peak/Tune mode (from serial field [6])
+    public bool ShowMeterMode { get => _showMeterMode; set => SetProperty(ref _showMeterMode, value); }
+
+    private bool _showMeterAlarm = true;  // meter's SWR alarm setpoint (from serial field [3]); clickable
+    public bool ShowMeterAlarm { get => _showMeterAlarm; set => SetProperty(ref _showMeterAlarm, value); }
+
     // LP-100A-only vector rows.
     private bool _showZ;
     public bool ShowZ { get => _showZ; set => SetProperty(ref _showZ, value); }
@@ -53,11 +59,11 @@ public sealed class DisplaySettings : ViewModelBase
     private bool _peakHoldEnabled = true;
     public bool PeakHoldEnabled { get => _peakHoldEnabled; set => SetProperty(ref _peakHoldEnabled, value); }
 
-    private bool _swrAlarmEnabled;
-    public bool SwrAlarmEnabled { get => _swrAlarmEnabled; set => SetProperty(ref _swrAlarmEnabled, value); }
-
-    private decimal _swrAlarmThreshold = 2.5m;
-    public decimal SwrAlarmThreshold { get => _swrAlarmThreshold; set => SetProperty(ref _swrAlarmThreshold, value); }
+    // On-screen HIGH SWR banner. Triggers off the meter's own alarm setpoint (serial field
+    // [3]); this flag only controls whether the visual banner shows — the meter's hardware
+    // alarm/relay is unaffected either way.
+    private bool _swrBannerEnabled = true;
+    public bool SwrBannerEnabled { get => _swrBannerEnabled; set => SetProperty(ref _swrBannerEnabled, value); }
 
     // Seconds the peak-hold marker sits at the peak before it starts to decay.
     private decimal _peakHoldSeconds = 1.5m;

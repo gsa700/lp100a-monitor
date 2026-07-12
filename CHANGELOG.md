@@ -5,6 +5,34 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.8.0-beta] - 2026-07-12
+
+### Added
+- **Meter mode indicator & control** — a METER MODE row shows the meter's Avg/Peak/Tune power
+  mode, and clicking it cycles the meter Avg → Peak → Tune (sends the `F` command). No more
+  reaching for the front panel.
+- **Meter SWR alarm control** — a METER ALARM row shows the meter's SWR alarm setpoint
+  (OFF / 1.5 / 2.0 / 2.5 / 3.0 / User) and clicking it cycles the setpoint (sends `A`), driving
+  the LP-100A's own hardware alarm and protective PTT relay.
+
+### Changed
+- **Serial field map corrected against the official manual (p.20).** Field [5] is the autorange
+  scale (High/Mid/Low), not a transmit flag; field [6] is the power mode; field [3] is the
+  alarm-setpoint index. Transmit detection now keys purely off forward power.
+- **SWR alarm integrated.** The on-screen HIGH SWR banner now echoes the meter's own alarm
+  setpoint — one trip point, set on the METER ALARM row — instead of a separate app threshold.
+  A new "Show on-screen SWR alarm" toggle enables/disables just the visual banner; the meter's
+  hardware alarm is unaffected either way.
+- **Setup window compacted** — display toggles are laid out in two columns so the window fits
+  comfortably on smaller screens (e.g. a 1080p laptop).
+
+### Notes & limitations
+- The meter does not send the numeric value of its **User** alarm setpoint over serial, so the
+  on-screen banner cannot show for the **User** or **Off** settings — the meter's own hardware
+  alarm/relay still works normally. The presets 1.5–3.0 drive the banner.
+- The app sends only `F` (Peak/Avg/Tune) and `A` (alarm) to the meter. It never sends `M`
+  (mode/screen change), which would move the meter off its Watts screen and interrupt live data.
+
 ## [0.7.0-beta] - 2026-07-12
 
 ### Added

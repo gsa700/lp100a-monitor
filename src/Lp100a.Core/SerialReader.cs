@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Text;
 
@@ -14,6 +15,7 @@ public sealed class SerialReader : IDisposable
     private const int PollIntervalMs = 80;   // matches the LP-100A VCP default (~12 samples/s)
 
     private readonly StreamFramer _framer = new();
+    private readonly ConcurrentQueue<byte> _outbox = new();  // control commands to send on the poll thread
     private SerialPort? _port;
     private Thread? _thread;
     private volatile bool _running;
@@ -25,10 +27,32 @@ public sealed class SerialReader : IDisposable
 
     public static string[] GetPortNames() => SerialPort.GetPortNames();
 
+    /// <summary>
+    /// Queue a Peak/Avg/Tune cycle command ('F') for the meter. Only 'F' is ever sent —
+    /// it advances the power mode while staying on the Watts screen (unlike 'M', which
+    /// changes the whole display and must not be sent). Written on the poll thread so it
+    /// never races a 'P' poll.
+    /// </summary>
+    public void CyclePowerMode()
+    {
+        if (_running) _outbox.Enqueue((byte)'F');
+    }
+
+    /// <summary>
+    /// Queue an SWR-alarm-setpoint cycle command ('A') for the meter. Advances the alarm
+    /// through OFF → 1.5 → 2.0 → 2.5 → 3.0 → User. Like 'F', it stays on the current screen.
+    /// Written on the poll thread so it never races a 'P' poll.
+    /// </summary>
+    public void CycleAlarm()
+    {
+        if (_running) _outbox.Enqueue((byte)'A');
+    }
+
     public void Start(string portName)
     {
         Stop();
         _framer.Reset();
+        _outbox.Clear();
         _running = true;
         _thread = new Thread(() => Loop(portName))
         {
@@ -65,8 +89,18 @@ public sealed class SerialReader : IDisposable
             var buffer = new byte[512];
             var nextPoll = DateTime.UtcNow;
 
+            var one = new byte[1];
             while (_running)
             {
+                // Send any queued control commands ('F' only) before polling, so the write
+                // never overlaps a 'P' and the next poll reports the meter's new mode.
+                while (_outbox.TryDequeue(out var cmd))
+                {
+                    one[0] = cmd;
+                    _port.Write(one, 0, 1);
+                    Thread.Sleep(10);   // brief gap for the meter to act on it
+                }
+
                 var now = DateTime.UtcNow;
                 if (now >= nextPoll)
                 {

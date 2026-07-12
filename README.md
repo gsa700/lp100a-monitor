@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.7.0-beta** — real and in use, but not yet broadly field-tested.
+> Status: **0.8.0-beta** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -34,12 +34,21 @@ no need to download manually again.
 
 - **Main window** — power/SWR hero readouts, forward-power (with a peak-hold marker)
   and SWR bars, and toggleable rows (reflected power, return loss, dBm, peak, |Z|,
-  phase, R + jX).
+  phase, R + jX). Two of the rows are **clickable controls** for the meter:
+  - **METER MODE** — shows the meter's Avg/Peak/Tune power mode; click to cycle it.
+  - **METER ALARM** — shows the meter's SWR alarm setpoint (OFF/1.5/2.0/2.5/3.0/User);
+    click to cycle it, setting the LP-100A's own hardware alarm and PTT-protect relay.
 - **Vector window** — the Smith chart: constant-R/X grid with ohm labels, a live
   operating-point marker with a fading trail, and a constant-SWR circle. Great for
   antenna/tuner tuning.
-- **Setup window** — port selection, display toggles, an SWR alarm (enable +
-  threshold), peak-hold on/off, and in-app updates.
+- **Setup window** — port selection, display toggles, an on-screen SWR alarm banner
+  toggle, peak-hold on/off, and in-app updates.
+
+The on-screen **HIGH SWR banner** echoes the meter's own alarm setpoint (set on the
+METER ALARM row) and can be switched off independently in Setup. **Limitation:** the
+meter doesn't report the numeric value of its **User** setpoint over serial, so the
+banner can't display for the **User** or **Off** settings — the meter's hardware
+alarm/relay still works normally; the presets 1.5–3.0 drive the banner.
 
 Setup and Vector are children of the main window; closing the main window closes
 everything. Window positions and display choices persist between runs.
@@ -48,14 +57,20 @@ everything. Window positions and display choices persist between runs.
 | :--------------------------------------------: | :--------------------------------------------------------: |
 | ![Main window, idle](docs/screenshot-main.png) | ![Main window, transmitting](docs/screenshot-main-tx.png) |
 
-## Serial protocol (confirmed on-air, single LPC1 coupler)
+## Serial protocol (per the official LP-100A manual, p.20)
 
 - **115200 baud, 8N1, no flow control.** Send ASCII `P`; the meter replies with one
   frame delimited by a leading `;` (no CR/LF).
-- Fields: `Fwd(W), Z(Ω), Phase(°), AlarmSet, Callsign, StateFlag, ?, dBm, SWR`
-  - `StateFlag`: `1` = transmitting/RF present, `2` = idle.
+- Fields: `Power(W), Z(Ω), Phase(°), AlarmIdx, Callsign, PowerRange, MeterMode, dBm, SWR`
+  - `AlarmIdx`: `0`=off, `1`=1.5, `2`=2.0, `3`=2.5, `4`=3.0, `5`=User.
+  - `PowerRange`: autorange scale — `0`=High, `1`=Mid, `2`=Low (**not** a transmit flag;
+    transmit is detected from forward power > 0).
+  - `MeterMode`: `0`=Average, `1`=Peak, `2`=Tune.
+- Control commands: `A` cycles the alarm setpoint, `F` cycles Avg/Peak/Tune. This app
+  sends only those two — never `M` (mode/screen change), which would move the meter off
+  its Watts screen and interrupt live data.
 - The serial data reflects the meter's **active display screen** — keep it on the
-  **Watts/Power screen** for live power/dBm/Z/phase. The interface is read-only.
+  **Watts/Power screen** for live power/dBm/Z/phase.
 
 ## Build from source
 

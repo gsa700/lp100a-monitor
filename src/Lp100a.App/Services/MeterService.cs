@@ -28,6 +28,18 @@ public sealed class MeterService : IDisposable
     public event Action? PeakResetRequested;
     public void RequestPeakReset() => PeakResetRequested?.Invoke();
 
+    /// <summary>Cycle the meter's Avg → Peak → Tune power mode (sends 'F').</summary>
+    public void CyclePowerMode()
+    {
+        if (IsConnected) _reader.CyclePowerMode();
+    }
+
+    /// <summary>Cycle the meter's SWR alarm setpoint OFF → 1.5 → 2.0 → 2.5 → 3.0 → User (sends 'A').</summary>
+    public void CycleAlarm()
+    {
+        if (IsConnected) _reader.CycleAlarm();
+    }
+
     public MeterService()
     {
         _reader.ReadingReceived += r => Dispatcher.UIThread.Post(() =>

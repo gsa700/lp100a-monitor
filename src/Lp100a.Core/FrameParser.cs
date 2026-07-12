@@ -19,9 +19,9 @@ public static class FrameParser
         if (!TryNum(f[0], out var fwd)) return false;
         if (!TryNum(f[1], out var z)) return false;
         if (!TryNum(f[2], out var phase)) return false;
-        TryNum(f[3], out var alarm);
-        TryInt(f[5], out var state);
-        TryInt(f[6], out var field6);
+        TryInt(f[3], out var alarmIndex);
+        TryInt(f[5], out var range);
+        TryInt(f[6], out var mode);
         TryNum(f[7], out var dbm);
         if (!TryNum(f[8], out var swr)) return false;
 
@@ -30,10 +30,10 @@ public static class FrameParser
             ForwardPowerW = fwd,
             ZOhms = z,
             PhaseDeg = phase,
-            AlarmSetpoint = alarm,
+            AlarmIndex = alarmIndex,
             Callsign = f[4].Trim(),
-            StateFlag = state,
-            Field6 = field6,
+            PowerRange = range,
+            MeterMode = mode,
             Dbm = dbm,
             Swr = swr,
         };

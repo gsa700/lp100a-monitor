@@ -31,14 +31,15 @@ public sealed class AppConfig
         d.ShowDbm = Display.ShowDbm;
         d.ShowPeak = Display.ShowPeak;
         d.ShowTx = Display.ShowTx;
+        d.ShowMeterMode = Display.ShowMeterMode;
+        d.ShowMeterAlarm = Display.ShowMeterAlarm;
         d.ShowZ = Display.ShowZ;
         d.ShowPhase = Display.ShowPhase;
         d.ShowRx = Display.ShowRx;
         d.ShowVectorWindow = Display.ShowVectorWindow;
         d.AlwaysOnTop = Display.AlwaysOnTop;
         d.PeakHoldEnabled = Display.PeakHoldEnabled;
-        d.SwrAlarmEnabled = Display.SwrAlarmEnabled;
-        d.SwrAlarmThreshold = Display.SwrAlarmThreshold;
+        d.SwrBannerEnabled = Display.SwrBannerEnabled;
         d.PeakHoldSeconds = Display.PeakHoldSeconds;
     }
 
@@ -52,14 +53,15 @@ public sealed class AppConfig
         Display.ShowDbm = d.ShowDbm;
         Display.ShowPeak = d.ShowPeak;
         Display.ShowTx = d.ShowTx;
+        Display.ShowMeterMode = d.ShowMeterMode;
+        Display.ShowMeterAlarm = d.ShowMeterAlarm;
         Display.ShowZ = d.ShowZ;
         Display.ShowPhase = d.ShowPhase;
         Display.ShowRx = d.ShowRx;
         Display.ShowVectorWindow = d.ShowVectorWindow;
         Display.AlwaysOnTop = d.AlwaysOnTop;
         Display.PeakHoldEnabled = d.PeakHoldEnabled;
-        Display.SwrAlarmEnabled = d.SwrAlarmEnabled;
-        Display.SwrAlarmThreshold = d.SwrAlarmThreshold;
+        Display.SwrBannerEnabled = d.SwrBannerEnabled;
         Display.PeakHoldSeconds = d.PeakHoldSeconds;
     }
 }
@@ -74,14 +76,15 @@ public sealed class DisplayConfig
     public bool ShowDbm { get; set; } = true;
     public bool ShowPeak { get; set; } = true;
     public bool ShowTx { get; set; } = true;
+    public bool ShowMeterMode { get; set; } = true;
+    public bool ShowMeterAlarm { get; set; } = true;
     public bool ShowZ { get; set; }
     public bool ShowPhase { get; set; }
     public bool ShowRx { get; set; } = true;
     public bool ShowVectorWindow { get; set; }
     public bool AlwaysOnTop { get; set; }
     public bool PeakHoldEnabled { get; set; } = true;
-    public bool SwrAlarmEnabled { get; set; }
-    public decimal SwrAlarmThreshold { get; set; } = 2.5m;
+    public bool SwrBannerEnabled { get; set; } = true;
     public decimal PeakHoldSeconds { get; set; } = 1.5m;
 }
 

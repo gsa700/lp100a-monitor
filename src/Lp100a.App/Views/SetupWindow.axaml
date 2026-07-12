@@ -3,13 +3,13 @@
         xmlns:vm="using:Lp100a.App.ViewModels"
         x:Class="Lp100a.App.Views.SetupWindow"
         x:DataType="vm:SetupViewModel"
-        Width="360" SizeToContent="Height"
+        Width="400" SizeToContent="Height"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
         Title="LP-100A Setup">
 
-  <StackPanel Margin="16" Spacing="14">
+  <StackPanel Margin="16" Spacing="10">
 
     <!-- Connection -->
     <TextBlock Text="CONNECTION" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
@@ -27,23 +27,25 @@
     <TextBlock Text="DISPLAY" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
     <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
                Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
-    <StackPanel Spacing="4">
-      <CheckBox Content="Forward power bar" IsChecked="{Binding Display.ShowPowerBar}"/>
-      <CheckBox Content="SWR bar"          IsChecked="{Binding Display.ShowSwrBar}"/>
-      <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}"/>
-      <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}"/>
-      <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}"/>
-      <StackPanel Orientation="Horizontal" Spacing="8">
+    <UniformGrid Columns="2">
+      <CheckBox Content="Forward power bar" IsChecked="{Binding Display.ShowPowerBar}" Margin="0,3"/>
+      <CheckBox Content="SWR bar"          IsChecked="{Binding Display.ShowSwrBar}" Margin="0,3"/>
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,3">
         <CheckBox Content="Peak forward" IsChecked="{Binding Display.ShowPeak}"/>
         <Button Content="(reset)" Command="{Binding ResetPeakCommand}"
                 Background="Transparent" BorderThickness="0" Padding="0"
                 Foreground="{StaticResource BlueBrush}" Cursor="Hand" VerticalAlignment="Center"/>
       </StackPanel>
-      <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}"/>
-      <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}"/>
-      <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}"/>
-      <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}"/>
-    </StackPanel>
+      <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}" Margin="0,3"/>
+      <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}" Margin="0,3"/>
+      <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}" Margin="0,3"/>
+      <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}" Margin="0,3"/>
+      <CheckBox Content="Meter mode"       IsChecked="{Binding Display.ShowMeterMode}" Margin="0,3"/>
+      <CheckBox Content="Meter alarm"      IsChecked="{Binding Display.ShowMeterAlarm}" Margin="0,3"/>
+      <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}" Margin="0,3"/>
+      <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}" Margin="0,3"/>
+      <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}" Margin="0,3"/>
+    </UniformGrid>
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
@@ -56,19 +58,19 @@
                        IsEnabled="{Binding Display.PeakHoldEnabled}"/>
         <TextBlock Text="s" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
       </StackPanel>
-      <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}"/>
-      <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}"/>
+      <UniformGrid Columns="2">
+        <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}" Margin="0,3"/>
+        <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}" Margin="0,3"/>
+      </UniformGrid>
     </StackPanel>
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
     <!-- SWR alarm -->
     <TextBlock Text="SWR ALARM" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <StackPanel Orientation="Horizontal" Spacing="10">
-      <CheckBox Content="Alarm above SWR" IsChecked="{Binding Display.SwrAlarmEnabled}" VerticalAlignment="Center"/>
-      <NumericUpDown Value="{Binding Display.SwrAlarmThreshold}" Minimum="1.5" Maximum="5.0"
-                     Increment="0.1" FormatString="0.0" Width="120" VerticalAlignment="Center"/>
-    </StackPanel>
+    <CheckBox Content="Show on-screen SWR alarm" IsChecked="{Binding Display.SwrBannerEnabled}"/>
+    <TextBlock Text="Set the trip point on the METER ALARM row (it drives the meter's own alarm and relay). The on-screen banner echoes it. Note: the meter doesn't report a value for its User setpoint, so the banner can't show for User or Off — the meter's alarm still works."
+               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 

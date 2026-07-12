@@ -30,11 +30,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         _meter.StateChanged += OnStateChanged;
         _meter.PeakResetRequested += ResetPeak;
         ResetPeakCommand = new RelayCommand(ResetPeak);
+        CyclePowerModeCommand = new RelayCommand(_meter.CyclePowerMode, () => _meter.IsConnected);
+        CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
         OnStateChanged();
     }
 
     public DisplaySettings Display { get; }
     public RelayCommand ResetPeakCommand { get; }
+    public RelayCommand CyclePowerModeCommand { get; }
+    public RelayCommand CycleAlarmCommand { get; }
 
     public string TitleText => "LP-100A MONITOR";
 
@@ -99,6 +103,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _txTimerText = "0:00";
     public string TxTimerText { get => _txTimerText; private set => SetProperty(ref _txTimerText, value); }
 
+    private string _meterModeText = "—";
+    public string MeterModeText { get => _meterModeText; private set => SetProperty(ref _meterModeText, value); }
+
+    private string _alarmSetpointText = "—";
+    public string AlarmSetpointText { get => _alarmSetpointText; private set => SetProperty(ref _alarmSetpointText, value); }
+
     private IBrush _txBrush = Palette.DimBrush;
     public IBrush TxBrush { get => _txBrush; private set => SetProperty(ref _txBrush, value); }
 
@@ -114,6 +124,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             : _meter is { IsConnected: true, Current: not null } ? Palette.GreenBrush
             : _meter.IsConnected ? Palette.AmberBrush : Palette.DimBrush;
 
+        CyclePowerModeCommand.RaiseCanExecuteChanged();
+        CycleAlarmCommand.RaiseCanExecuteChanged();
         if (!_meter.IsConnected) BlankReadouts();
     }
 
@@ -132,6 +144,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         ZText = $"{r.ZOhms:0.0} Ω";
         PhaseText = $"{r.PhaseDeg:+0.0;-0.0}°";
         RxText = $"{r.ResistanceOhms:0.0} {(r.ReactanceOhms >= 0 ? "+" : "−")} j{Math.Abs(r.ReactanceOhms):0.0} Ω";
+        MeterModeText = r.MeterModeText;
+        AlarmSetpointText = r.AlarmSetpointText;
 
         // Peak-hold marker (computed first so the bar scale can honor it): jump to new peaks,
         // hold ~1.5 s, then ease toward live.
@@ -160,8 +174,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         PowerBarMax = FitBarMax(_barRef / 0.7);
         SwrBarValue = Math.Min(3.0, r.Swr);
 
-        // SWR alarm: app-side watch of live SWR against the user threshold, while transmitting.
-        AlarmActive = Display.SwrAlarmEnabled && r.IsTransmitting && r.Swr >= (double)Display.SwrAlarmThreshold;
+        // HIGH SWR banner: a visual echo of the meter's own alarm. Uses the meter's setpoint
+        // (field [3]) as the single threshold. OFF/User send no numeric over serial, so the
+        // banner can't fire there (the meter's hardware alarm/relay still works).
+        AlarmActive = Display.SwrBannerEnabled && r.IsTransmitting
+                      && r.AlarmThreshold is double trip && r.Swr >= trip;
 
         // Peak forward.
         if (r.ForwardPowerW > _sessionPeak) { _sessionPeak = r.ForwardPowerW; PeakText = $"{_sessionPeak:0.0} W"; }
@@ -217,7 +234,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         PowerText = "— W"; SwrText = "—"; SwrBrush = Palette.DimBrush;
         ReflectedText = "— W"; ReturnLossText = "— dB"; DbmText = "— dBm";
-        ZText = "— Ω"; PhaseText = "—°"; RxText = "—";
+        ZText = "— Ω"; PhaseText = "—°"; RxText = "—"; MeterModeText = "—"; AlarmSetpointText = "—";
         PowerBarValue = 0; PowerBarPeak = 0; _heldPeak = 0; _barRef = 0; SwrBarValue = 1.0; TxBrush = Palette.DimBrush;
         AlarmActive = false;
         CallsignText = "";
