@@ -39,6 +39,7 @@ public sealed class AppConfig
         d.PeakHoldEnabled = Display.PeakHoldEnabled;
         d.SwrAlarmEnabled = Display.SwrAlarmEnabled;
         d.SwrAlarmThreshold = Display.SwrAlarmThreshold;
+        d.PeakHoldSeconds = Display.PeakHoldSeconds;
     }
 
     public void CaptureFrom(DisplaySettings d)
@@ -59,6 +60,7 @@ public sealed class AppConfig
         Display.PeakHoldEnabled = d.PeakHoldEnabled;
         Display.SwrAlarmEnabled = d.SwrAlarmEnabled;
         Display.SwrAlarmThreshold = d.SwrAlarmThreshold;
+        Display.PeakHoldSeconds = d.PeakHoldSeconds;
     }
 }
 
@@ -80,6 +82,7 @@ public sealed class DisplayConfig
     public bool PeakHoldEnabled { get; set; } = true;
     public bool SwrAlarmEnabled { get; set; }
     public decimal SwrAlarmThreshold { get; set; } = 2.5m;
+    public decimal PeakHoldSeconds { get; set; } = 1.5m;
 }
 
 public static class ConfigStore

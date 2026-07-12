@@ -139,7 +139,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             var f = r.ForwardPowerW;
             if (f >= _heldPeak) { _heldPeak = f; _heldPeakAt = DateTime.Now; }
-            else if ((DateTime.Now - _heldPeakAt).TotalSeconds > 1.5)
+            else if ((DateTime.Now - _heldPeakAt).TotalSeconds > (double)Display.PeakHoldSeconds)
             {
                 _heldPeak -= (_heldPeak - f) * 0.34;
                 if (_heldPeak < f) _heldPeak = f;

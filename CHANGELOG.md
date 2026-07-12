@@ -5,6 +5,16 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.7.0-beta] - 2026-07-12
+
+### Added
+- **Peak-hold decay time** — set how long the peak-hold marker sits at the peak before it
+  eases down (Setup → Peak hold → decay, 0.25–5 s). Persists between runs.
+
+### Changed
+- SWR bar is taller (~80% of the power bar) with square corners, so the two bars read as a
+  consistent pair.
+
 ## [0.6.1-beta] - 2026-07-07
 
 ### Changed

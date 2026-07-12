@@ -48,7 +48,14 @@
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
     <StackPanel Spacing="4">
-      <CheckBox Content="Peak hold"          IsChecked="{Binding Display.PeakHoldEnabled}"/>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <CheckBox Content="Peak hold" IsChecked="{Binding Display.PeakHoldEnabled}" VerticalAlignment="Center"/>
+        <TextBlock Text="decay" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <NumericUpDown Value="{Binding Display.PeakHoldSeconds}" Minimum="0.25" Maximum="5.0"
+                       Increment="0.25" FormatString="0.00" Width="124" VerticalAlignment="Center"
+                       IsEnabled="{Binding Display.PeakHoldEnabled}"/>
+        <TextBlock Text="s" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+      </StackPanel>
       <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}"/>
       <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}"/>
     </StackPanel>

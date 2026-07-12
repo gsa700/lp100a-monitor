@@ -58,4 +58,8 @@ public sealed class DisplaySettings : ViewModelBase
 
     private decimal _swrAlarmThreshold = 2.5m;
     public decimal SwrAlarmThreshold { get => _swrAlarmThreshold; set => SetProperty(ref _swrAlarmThreshold, value); }
+
+    // Seconds the peak-hold marker sits at the peak before it starts to decay.
+    private decimal _peakHoldSeconds = 1.5m;
+    public decimal PeakHoldSeconds { get => _peakHoldSeconds; set => SetProperty(ref _peakHoldSeconds, value); }
 }

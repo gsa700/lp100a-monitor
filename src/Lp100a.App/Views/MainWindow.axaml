@@ -47,7 +47,7 @@
                     Fill="{StaticResource BlueBrush}" Track="{StaticResource TrackBrush}" PeakBrush="{StaticResource TextBrush}"
                     IsVisible="{Binding Display.ShowPowerBar}"/>
       <ProgressBar Minimum="1" Maximum="3" Value="{Binding SwrBarValue}"
-                   Height="7" ShowProgressText="False"
+                   Height="11" ShowProgressText="False" CornerRadius="0"
                    Foreground="{StaticResource GoldBrush}" Background="{StaticResource TrackBrush}"
                    IsVisible="{Binding Display.ShowSwrBar}"/>
     </StackPanel>
