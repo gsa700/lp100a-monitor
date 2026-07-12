@@ -5,6 +5,14 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.3-beta] - 2026-07-12
+
+### Changed
+- The clickable METER MODE / METER ALARM values now right-justify flush with the other readout
+  rows (dropped the padding that was offsetting them; the hit area is preserved via a min width).
+- Default peak-hold decay time is now 1.0 s (was 1.5 s). Affects new installs only — an existing
+  saved setting is left as-is.
+
 ## [0.9.2-beta] - 2026-07-12
 
 ### Changed

@@ -64,7 +64,7 @@
         <!-- Clickable: sends 'F' to cycle the meter's Avg → Peak → Tune power mode. -->
         <Button Grid.Column="1" Command="{Binding CyclePowerModeCommand}" Content="{Binding MeterModeText}"
                 FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-                Background="Transparent" BorderThickness="0" Padding="14,0" MinWidth="64" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0" MinWidth="64" Cursor="Hand"
                 HorizontalContentAlignment="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
       </Grid>
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowMeterAlarm}" Margin="0,0,0,6">
@@ -72,7 +72,7 @@
         <!-- Clickable: sends 'A' to cycle the meter's SWR alarm setpoint (OFF→1.5→2.0→2.5→3.0→User). -->
         <Button Grid.Column="1" Command="{Binding CycleAlarmCommand}" Content="{Binding AlarmSetpointText}"
                 FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-                Background="Transparent" BorderThickness="0" Padding="14,0" MinWidth="64" Cursor="Hand"
+                Background="Transparent" BorderThickness="0" Padding="0" MinWidth="64" Cursor="Hand"
                 HorizontalContentAlignment="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
       </Grid>
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowReflected}" Margin="0,0,0,6">

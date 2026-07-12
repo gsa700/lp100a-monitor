@@ -66,6 +66,6 @@ public sealed class DisplaySettings : ViewModelBase
     public bool SwrBannerEnabled { get => _swrBannerEnabled; set => SetProperty(ref _swrBannerEnabled, value); }
 
     // Seconds the peak-hold marker sits at the peak before it starts to decay.
-    private decimal _peakHoldSeconds = 1.5m;
+    private decimal _peakHoldSeconds = 1.0m;
     public decimal PeakHoldSeconds { get => _peakHoldSeconds; set => SetProperty(ref _peakHoldSeconds, value); }
 }

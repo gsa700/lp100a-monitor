@@ -85,7 +85,7 @@ public sealed class DisplayConfig
     public bool AlwaysOnTop { get; set; }
     public bool PeakHoldEnabled { get; set; } = true;
     public bool SwrBannerEnabled { get; set; } = true;
-    public decimal PeakHoldSeconds { get; set; } = 1.5m;
+    public decimal PeakHoldSeconds { get; set; } = 1.0m;
 }
 
 public static class ConfigStore
