@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.8.0-beta** — real and in use, but not yet broadly field-tested.
+> Status: **0.9.0-beta** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -44,11 +44,15 @@ no need to download manually again.
 - **Setup window** — port selection, display toggles, an on-screen SWR alarm banner
   toggle, peak-hold on/off, and in-app updates.
 
-The on-screen **HIGH SWR banner** echoes the meter's own alarm setpoint (set on the
-METER ALARM row) and can be switched off independently in Setup. **Limitation:** the
-meter doesn't report the numeric value of its **User** setpoint over serial, so the
-banner can't display for the **User** or **Off** settings — the meter's hardware
-alarm/relay still works normally; the presets 1.5–3.0 drive the banner.
+The **SWR bar** fills with a green → orange → red gradient whose colour breakpoints
+scale to the meter's alarm setpoint — red anchors where your alarm trips. When the
+alarm fires, the bar itself flashes red with the live **HIGH SWR** reading embedded in
+it. This on-screen alert echoes the meter's own alarm setpoint (set on the METER ALARM
+row, or in Setup → SWR ALARM) and can be switched off independently in Setup.
+**Limitation:** the meter doesn't report the numeric value of its **User** setpoint over
+serial, so the on-screen alert and the setpoint-scaled colours fall back to defaults for
+the **User** or **Off** settings — the meter's hardware alarm/relay still works normally;
+the presets 1.5–3.0 drive the on-screen alert.
 
 Setup and Vector are children of the main window; closing the main window closes
 everything. Window positions and display choices persist between runs.

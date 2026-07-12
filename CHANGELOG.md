@@ -5,6 +5,25 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.0-beta] - 2026-07-12
+
+### Added
+- **Live SWR bar** — the SWR bar now fills with a green → orange → red gradient, and the colour
+  breakpoints **scale to the meter's alarm setpoint**: red anchors where your alarm trips, with
+  orange approaching and green safely below. (Falls back to a fixed green→orange→red for the
+  Off/User settings, which send no numeric over serial.)
+- **Alarm built into the bar** — when the alarm trips, the SWR bar itself flashes red with the
+  live "HIGH SWR n.n" text embedded inside it, replacing the old separate banner. It stays
+  visible while tripped even if the SWR bar is toggled off.
+- **Alarm setpoint control in Setup** — the SWR ALARM section now shows the meter setpoint and
+  lets you cycle it, so the alarm is settable from the app even when the main-window METER ALARM
+  row is hidden.
+
+### Changed
+- The SWR bar is a fixed height matched to the power bar (no longer changes size when the alarm
+  trips). SWR bar range is 1.0–3.0 (values above 3:1 peg the bar; the numeric readout is
+  unlimited).
+
 ## [0.8.0-beta] - 2026-07-12
 
 ### Added

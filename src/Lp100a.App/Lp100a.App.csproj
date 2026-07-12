@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>Lp100aMonitor</AssemblyName>
-    <Version>0.8.0-beta</Version>
+    <Version>0.9.0-beta</Version>
     <Product>LP-100A Monitor</Product>
     <Authors>David Erickson (AB0R)</Authors>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>

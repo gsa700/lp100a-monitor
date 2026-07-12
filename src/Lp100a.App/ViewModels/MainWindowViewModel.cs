@@ -26,6 +26,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         _meter = meter;
         Display = display;
 
+        Display.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DisplaySettings.ShowSwrBar))
+                OnPropertyChanged(nameof(SwrBarVisible));
+        };
+
         _meter.ReadingReceived += OnReading;
         _meter.StateChanged += OnStateChanged;
         _meter.PeakResetRequested += ResetPeak;
@@ -113,7 +119,27 @@ public sealed class MainWindowViewModel : ViewModelBase
     public IBrush TxBrush { get => _txBrush; private set => SetProperty(ref _txBrush, value); }
 
     private bool _alarmActive;
-    public bool AlarmActive { get => _alarmActive; private set => SetProperty(ref _alarmActive, value); }
+    public bool AlarmActive
+    {
+        get => _alarmActive;
+        private set
+        {
+            if (SetProperty(ref _alarmActive, value))
+                OnPropertyChanged(nameof(SwrBarVisible));
+        }
+    }
+
+    // The alarm text embedded in the SWR bar when it trips.
+    private string _alarmText = "HIGH SWR";
+    public string AlarmText { get => _alarmText; private set => SetProperty(ref _alarmText, value); }
+
+    // Meter alarm setpoint (numeric; 0 for Off/User) — anchors where the SWR bar's colours break.
+    private double _swrAlarmSetpoint;
+    public double SwrAlarmSetpoint { get => _swrAlarmSetpoint; private set => SetProperty(ref _swrAlarmSetpoint, value); }
+
+    // Keep the bar (and thus the alarm) visible whenever it's tripped, even if the user has
+    // the SWR bar toggled off.
+    public bool SwrBarVisible => Display.ShowSwrBar || _alarmActive;
 
     private void OnStateChanged()
     {
@@ -174,9 +200,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         PowerBarMax = FitBarMax(_barRef / 0.7);
         SwrBarValue = Math.Min(3.0, r.Swr);
 
-        // HIGH SWR banner: a visual echo of the meter's own alarm. Uses the meter's setpoint
-        // (field [3]) as the single threshold. OFF/User send no numeric over serial, so the
-        // banner can't fire there (the meter's hardware alarm/relay still works).
+        // HIGH SWR alarm, embedded in the SWR bar: a visual echo of the meter's own alarm. Uses
+        // the meter's setpoint (field [3]) as the single threshold. OFF/User send no numeric over
+        // serial, so it can't fire there (the meter's hardware alarm/relay still works).
+        AlarmText = $"HIGH SWR {r.Swr:0.0}";
+        SwrAlarmSetpoint = r.AlarmThreshold ?? 0.0;
         AlarmActive = Display.SwrBannerEnabled && r.IsTransmitting
                       && r.AlarmThreshold is double trip && r.Swr >= trip;
 
@@ -235,6 +263,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         PowerText = "— W"; SwrText = "—"; SwrBrush = Palette.DimBrush;
         ReflectedText = "— W"; ReturnLossText = "— dB"; DbmText = "— dBm";
         ZText = "— Ω"; PhaseText = "—°"; RxText = "—"; MeterModeText = "—"; AlarmSetpointText = "—";
+        SwrAlarmSetpoint = 0;
         PowerBarValue = 0; PowerBarPeak = 0; _heldPeak = 0; _barRef = 0; SwrBarValue = 1.0; TxBrush = Palette.DimBrush;
         AlarmActive = false;
         CallsignText = "";

@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Media;
 using Lp100a.App.Services;
 using Lp100a.App.Settings;
+using Lp100a.Core;
 
 namespace Lp100a.App.ViewModels;
 
@@ -16,6 +17,7 @@ public sealed class SetupViewModel : ViewModelBase
         _meter = meter;
         Display = display;
         _meter.StateChanged += OnStateChanged;
+        _meter.ReadingReceived += OnReading;
 
         ConnectCommand = new RelayCommand(ToggleConnect, () => IsConnected || SelectedPort is not null);
         RefreshCommand = new RelayCommand(RefreshPorts);
@@ -23,6 +25,7 @@ public sealed class SetupViewModel : ViewModelBase
         UpdateNowCommand = new RelayCommand(() => _ = UpdateNowAsync(), () => _updateInfo?.AssetUrl is not null && !_updateBusy);
         OpenReleaseCommand = new RelayCommand(OpenRelease);
         ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
+        CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
         UpdateStatus = $"You have {UpdateService.CurrentVersion}.";
         RefreshPorts();
         OnStateChanged();
@@ -36,6 +39,12 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand UpdateNowCommand { get; }
     public RelayCommand OpenReleaseCommand { get; }
     public RelayCommand ResetPeakCommand { get; }
+    public RelayCommand CycleAlarmCommand { get; }
+
+    // Meter SWR alarm setpoint, shown/settable here so it's reachable even when the main-window
+    // METER ALARM row is toggled off.
+    private string _alarmSetpointText = "—";
+    public string AlarmSetpointText { get => _alarmSetpointText; private set => SetProperty(ref _alarmSetpointText, value); }
 
     private string? _selectedPort;
     public string? SelectedPort
@@ -74,14 +83,18 @@ public sealed class SetupViewModel : ViewModelBase
         SelectedPort = current is not null && Ports.Contains(current) ? current : Ports.FirstOrDefault();
     }
 
+    private void OnReading(Lp100Reading r) => AlarmSetpointText = r.AlarmSetpointText;
+
     private void OnStateChanged()
     {
         StatusText = _meter.Status;
         StatusBrush = _meter.StatusIsError ? Palette.RedBrush
             : _meter.IsConnected ? Palette.GreenBrush : Palette.DimBrush;
+        if (!_meter.IsConnected) AlarmSetpointText = "—";
         OnPropertyChanged(nameof(IsConnected));
         OnPropertyChanged(nameof(ConnectLabel));
         ConnectCommand.RaiseCanExecuteChanged();
+        CycleAlarmCommand.RaiseCanExecuteChanged();
     }
 
     // --- updates ---
