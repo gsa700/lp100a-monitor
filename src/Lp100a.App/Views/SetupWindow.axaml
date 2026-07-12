@@ -68,16 +68,16 @@
     <!-- Updates -->
     <TextBlock Text="UPDATES" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
     <StackPanel Orientation="Horizontal" Spacing="10">
-      <Button Content="Check for updates" Command="{Binding CheckUpdatesCommand}"/>
+      <Button Content="Check for updates" Command="{Binding CheckUpdatesCommand}"
+              IsVisible="{Binding !UpdateAvailable}"/>
+      <Button Content="Update now" Command="{Binding UpdateNowCommand}"
+              IsVisible="{Binding UpdateAvailable}"/>
       <CheckBox Content="Check at startup" IsChecked="{Binding CheckUpdatesAtStartup}" VerticalAlignment="Center"/>
     </StackPanel>
     <TextBlock Text="{Binding UpdateStatus}" Foreground="{Binding UpdateStatusBrush}" TextWrapping="Wrap"/>
     <Button Content="Open releases page" Command="{Binding OpenReleaseCommand}"
             Background="Transparent" BorderThickness="0" Padding="0"
             Foreground="{StaticResource BlueBrush}" Cursor="Hand" HorizontalAlignment="Left"/>
-    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding UpdateAvailable}">
-      <Button Content="Update now" Command="{Binding UpdateNowCommand}"/>
-    </StackPanel>
 
   </StackPanel>
 </Window>

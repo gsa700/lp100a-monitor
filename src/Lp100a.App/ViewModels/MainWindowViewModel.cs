@@ -8,7 +8,7 @@ namespace Lp100a.App.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private const double TxHangSeconds = 2.0;
-    private static readonly double[] BarSteps = { 5, 25, 100, 250, 1000, 2000 };
+    private static readonly double[] BarSteps = { 5, 10, 25, 50, 100, 150, 250, 400, 600, 1000, 1500, 2500, 3000 };
 
     private readonly MeterService _meter;
 
@@ -133,14 +133,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         PhaseText = $"{r.PhaseDeg:+0.0;-0.0}°";
         RxText = $"{r.ResistanceOhms:0.0} {(r.ReactanceOhms >= 0 ? "+" : "−")} j{Math.Abs(r.ReactanceOhms):0.0} Ω";
 
-        // Bars. Decaying auto-range full-scale: rise instantly to fit, then ease back down.
-        PowerBarValue = r.ForwardPowerW;
-        if (r.ForwardPowerW >= _barRef) _barRef = r.ForwardPowerW;
-        else _barRef -= (_barRef - r.ForwardPowerW) * 0.06;
-        PowerBarMax = FitBarMax(_barRef);
-        SwrBarValue = Math.Min(3.0, r.Swr);
-
-        // Peak-hold marker on the power bar: jump to new peaks, hold ~1.5 s, then ease toward live.
+        // Peak-hold marker (computed first so the bar scale can honor it): jump to new peaks,
+        // hold ~1.5 s, then ease toward live.
         if (Display.PeakHoldEnabled)
         {
             var f = r.ForwardPowerW;
@@ -153,6 +147,18 @@ public sealed class MainWindowViewModel : ViewModelBase
             PowerBarPeak = _heldPeak;
         }
         else { _heldPeak = 0; PowerBarPeak = 0; }
+
+        // Bars. Full-scale jumps up to fit, then HOLDS while the peak marker is elevated — so the
+        // marker slides down a fixed scale (analog peak-hold feel) — and only decays to refit live
+        // power once the peak has eased. Decaying while the peak is up collapses the scale under the
+        // marker, which makes the fill/marker look stuck near the top.
+        PowerBarValue = r.ForwardPowerW;
+        var barTarget = Math.Max(r.ForwardPowerW, _heldPeak);
+        if (barTarget >= _barRef) _barRef = barTarget;
+        else if (_heldPeak <= r.ForwardPowerW + 0.5) _barRef -= (_barRef - barTarget) * 0.06;
+        // ~40% headroom so the peak sits ~70% up the bar instead of jammed at the top.
+        PowerBarMax = FitBarMax(_barRef / 0.7);
+        SwrBarValue = Math.Min(3.0, r.Swr);
 
         // SWR alarm: app-side watch of live SWR against the user threshold, while transmitting.
         AlarmActive = Display.SwrAlarmEnabled && r.IsTransmitting && r.Swr >= (double)Display.SwrAlarmThreshold;

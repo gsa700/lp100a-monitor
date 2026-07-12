@@ -5,6 +5,15 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.6.1-beta] - 2026-07-07
+
+### Changed
+- Reworked the forward-power bar's auto-range: finer scale steps and ~40% headroom so
+  power reads ~70% up the bar instead of pegged at the top, and the full-scale now holds
+  while the peak-hold marker is elevated (the marker slides down a fixed scale).
+- Compact Updates layout in Setup — "Check for updates" and "Update now" share one row,
+  so the window no longer grows a row taller when an update is pending.
+
 ## [0.6.0-beta] - 2026-07-07
 
 ### Added
