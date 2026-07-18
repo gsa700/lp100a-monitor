@@ -5,6 +5,14 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.5-beta] - 2026-07-17
+
+### Changed
+- **Setup → Updates restyled** to match W2 Monitor: the status line sits above a single button
+  that reads "Check for updates" and switches to "Update now" once one is found, with a
+  "Release page" button beside it and the "Check for updates at startup" toggle below. Same
+  behaviour as before, laid out more cleanly (kept in the app's blue/green palette).
+
 ## [0.9.4-beta] - 2026-07-17
 
 ### Added
