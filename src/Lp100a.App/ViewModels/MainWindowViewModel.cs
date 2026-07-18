@@ -48,6 +48,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string TitleText => "LP-100A MONITOR";
 
+    /// <summary>Dim the readouts when the feed goes stale so the frozen values don't read as live.</summary>
+    public double ReadoutOpacity => _meter is { IsConnected: true, IsStale: true } ? 0.4 : 1.0;
+
     // --- status / header ---
     private string _statusText = "Disconnected";
     public string StatusText { get => _statusText; private set => SetProperty(ref _statusText, value); }
@@ -143,12 +146,15 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void OnStateChanged()
     {
-        StatusText = _meter.Status;
+        var stale = _meter is { IsConnected: true, IsStale: true };
+        StatusText = stale ? $"{_meter.Status} — no data (check the meter)" : _meter.Status;
         StatusBrush = _meter.StatusIsError ? Palette.RedBrush
+            : stale ? Palette.AmberBrush
             : _meter.IsConnected ? Palette.GreenBrush : Palette.DimBrush;
         ConnDotBrush = _meter.StatusIsError ? Palette.RedBrush
-            : _meter is { IsConnected: true, Current: not null } ? Palette.GreenBrush
+            : _meter is { IsConnected: true, IsStale: false, Current: not null } ? Palette.GreenBrush
             : _meter.IsConnected ? Palette.AmberBrush : Palette.DimBrush;
+        OnPropertyChanged(nameof(ReadoutOpacity));
 
         CyclePowerModeCommand.RaiseCanExecuteChanged();
         CycleAlarmCommand.RaiseCanExecuteChanged();
@@ -174,7 +180,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         AlarmSetpointText = r.AlarmSetpointText;
 
         // Peak-hold marker (computed first so the bar scale can honor it): jump to new peaks,
-        // hold ~1.5 s, then ease toward live.
+        // hold for the configured decay time, then ease toward live.
         if (Display.PeakHoldEnabled)
         {
             var f = r.ForwardPowerW;

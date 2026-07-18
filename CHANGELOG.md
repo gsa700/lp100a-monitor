@@ -5,6 +5,21 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.4-beta] - 2026-07-17
+
+### Added
+- **Stale-data watchdog** — a connected meter that stops sending frames *without* a serial
+  error (powered off with the USB adapter still plugged in, cable half-out, or knocked off its
+  Watts screen) now reads as frozen instead of live: after ~2 s of silence the connection dot
+  turns amber, the status line shows "no data (check the meter)", and the readouts dim. They
+  return to normal the instant frames resume.
+
+### Fixed
+- The framer no longer accumulates unboundedly when pointed at a non-LP-100A stream (a wrong
+  COM port that never sends the `;` frame delimiter); the partial-frame buffer is now capped.
+- A serial frame that arrived in the instant a disconnect was processed could briefly revive
+  the readouts and flash the connection dot green; the reading is now dropped once disconnected.
+
 ## [0.9.3-beta] - 2026-07-12
 
 ### Changed

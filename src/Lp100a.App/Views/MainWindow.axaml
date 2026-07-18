@@ -26,7 +26,7 @@
     </Grid>
 
     <!-- Hero readouts -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,14,0,0">
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,14,0,0" Opacity="{Binding ReadoutOpacity}">
       <StackPanel Grid.Column="0">
         <TextBlock Text="FORWARD POWER" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}"/>
         <TextBlock Text="{Binding PowerText}" FontFamily="Consolas" FontSize="34" FontWeight="Bold"
@@ -41,7 +41,7 @@
     </Grid>
 
     <!-- Bars -->
-    <StackPanel Grid.Row="2" Spacing="2" Margin="0,10,0,0">
+    <StackPanel Grid.Row="2" Spacing="2" Margin="0,10,0,0" Opacity="{Binding ReadoutOpacity}">
       <ctrl:PeakBar Height="14"
                     Value="{Binding PowerBarValue}" Maximum="{Binding PowerBarMax}" Peak="{Binding PowerBarPeak}"
                     Fill="{StaticResource BlueBrush}" Track="{StaticResource TrackBrush}" PeakBrush="{StaticResource TextBrush}"
@@ -54,7 +54,7 @@
     </StackPanel>
 
     <!-- Secondary rows -->
-    <StackPanel Grid.Row="3" Margin="0,12,0,0">
+    <StackPanel Grid.Row="3" Margin="0,12,0,0" Opacity="{Binding ReadoutOpacity}">
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowTx}" Margin="0,0,0,6">
         <TextBlock Grid.Column="0" Text="TX TIMER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
         <TextBlock Grid.Column="1" Text="{Binding TxTimerText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{Binding TxBrush}" HorizontalAlignment="Right"/>

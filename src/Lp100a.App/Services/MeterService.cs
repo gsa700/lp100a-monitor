@@ -10,13 +10,22 @@ namespace Lp100a.App.Services;
 /// </summary>
 public sealed class MeterService : IDisposable
 {
+    private const double StaleAfterSeconds = 2.0;
+
     private readonly SerialReader _reader = new();
+    private readonly DispatcherTimer _watchdog;
+    private DateTime _lastReadingUtc;
 
     public Lp100Reading? Current { get; private set; }
     public bool IsConnected { get; private set; }
     public string? CurrentPort { get; private set; }
     public string Status { get; private set; } = "Disconnected";
     public bool StatusIsError { get; private set; }
+
+    /// <summary>True when connected but no frame has arrived recently — the meter is off, the
+    /// cable is out, or it's been knocked off its Watts screen, so the readouts are frozen,
+    /// not live. A dead serial link often stops delivering frames without raising an error.</summary>
+    public bool IsStale { get; private set; }
 
     /// <summary>Fires on the UI thread for every decoded frame.</summary>
     public event Action<Lp100Reading>? ReadingReceived;
@@ -44,7 +53,12 @@ public sealed class MeterService : IDisposable
     {
         _reader.ReadingReceived += r => Dispatcher.UIThread.Post(() =>
         {
+            // A frame can still be queued on the UI thread when Disconnect runs; ignore it so
+            // it doesn't revive Current/IsStale after we've torn the connection down.
+            if (!IsConnected) return;
+            _lastReadingUtc = DateTime.UtcNow;
             Current = r;
+            if (IsStale) { IsStale = false; StateChanged?.Invoke(); }
             ReadingReceived?.Invoke(r);
         });
 
@@ -52,9 +66,23 @@ public sealed class MeterService : IDisposable
         {
             Status = msg;
             StatusIsError = isError;
-            if (isError) IsConnected = false;
+            if (isError) { IsConnected = false; IsStale = false; }
             StateChanged?.Invoke();
         });
+
+        // Watchdog: flag a connection whose frames have stopped (without a serial error) so the
+        // UI can stop implying the frozen values are live.
+        _watchdog = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _watchdog.Tick += (_, _) =>
+        {
+            if (!IsConnected || IsStale) return;
+            if ((DateTime.UtcNow - _lastReadingUtc).TotalSeconds >= StaleAfterSeconds)
+            {
+                IsStale = true;
+                StateChanged?.Invoke();
+            }
+        };
+        _watchdog.Start();
     }
 
     public static string[] GetPortNames() => SerialReader.GetPortNames();
@@ -65,6 +93,8 @@ public sealed class MeterService : IDisposable
         Status = $"Connecting {port}…";
         StatusIsError = false;
         IsConnected = true;
+        IsStale = false;
+        _lastReadingUtc = DateTime.UtcNow;   // grace period before the watchdog can flag stale
         _reader.Start(port);
         StateChanged?.Invoke();
     }
@@ -73,11 +103,16 @@ public sealed class MeterService : IDisposable
     {
         _reader.Stop();
         IsConnected = false;
+        IsStale = false;
         Current = null;
         Status = "Disconnected";
         StatusIsError = false;
         StateChanged?.Invoke();
     }
 
-    public void Dispose() => _reader.Dispose();
+    public void Dispose()
+    {
+        _watchdog.Stop();
+        _reader.Dispose();
+    }
 }

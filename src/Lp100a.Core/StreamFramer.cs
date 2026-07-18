@@ -9,6 +9,11 @@ namespace Lp100a.Core;
 /// </summary>
 public sealed class StreamFramer
 {
+    // Cap on the retained partial fragment. A real LP-100A frame is well under this; the cap
+    // only trips on a stream that never sends ';' (e.g. the wrong COM port), so the fragment
+    // buffer can't grow without bound.
+    private const int MaxTail = 4096;
+
     private readonly StringBuilder _acc = new();
 
     /// <summary>Feed a chunk of decoded text; returns any complete frame bodies (';' stripped).</summary>
@@ -27,9 +32,11 @@ public sealed class StreamFramer
             if (body.Length > 0) frames.Add(body);
         }
 
-        // Keep the (possibly partial) tail for next time.
+        // Keep the (possibly partial) tail for next time — unless it has grown past the cap
+        // without a delimiter, in which case drop it so a non-LP-100A stream can't accumulate.
         _acc.Clear();
-        _acc.Append(parts[^1]);
+        var tail = parts[^1];
+        if (tail.Length <= MaxTail) _acc.Append(tail);
         return frames;
     }
 
