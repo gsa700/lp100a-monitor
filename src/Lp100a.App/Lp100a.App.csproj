@@ -14,6 +14,12 @@
     <Product>LP-100A Monitor</Product>
     <Authors>David Erickson (AB0R)</Authors>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
+    <!-- Release is a TRUE single file: the in-app updater replaces only the exe, so the native
+         libs (Skia/HarfBuzz/ANGLE) MUST be bundled into it, not shipped loose. Without
+         IncludeNativeLibrariesForSelfExtract the updated exe lands with no native deps and
+         crashes on launch. Applies on publish with a RID; ignored by build/run. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
