@@ -5,6 +5,14 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.7-beta] - 2026-07-20
+
+### Fixed
+- **TX log CSV corrupted at ≥ 1000 W.** Power (and any other numeric column) was written with a
+  thousands separator, so a kilowatt forward-power reading rendered as `1,097.3` and split into two
+  columns, shifting every field after it. All numeric columns now use a non-grouping format. Delete
+  an existing `TXlog.csv` written by 0.9.6-beta — its rows have the extra column.
+
 ## [0.9.6-beta] - 2026-07-20
 
 ### Added
