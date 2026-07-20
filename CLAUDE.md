@@ -16,9 +16,9 @@ dotnet restore
 dotnet run --project src/Lp100a.App            # needs the .NET 8 SDK + a desktop/DISPLAY
 ```
 
-Solution: `LP100A.sln`. Output assembly is `Lp100aMonitor`. There is currently **no test
-project** — `Lp100a.Core` is deliberately UI-agnostic so serial/parse logic *can* be tested;
-add a `tests/` project if you introduce nontrivial logic.
+Solution: `LP100A.sln`. Output assembly is `Lp100aMonitor`. Run tests with `dotnet test`.
+`Lp100a.Core` is deliberately UI-agnostic so serial/parse logic can be tested; nontrivial Core
+logic gets covered in `tests/Lp100a.Core.Tests` (xUnit) — keep new logic testable and put it there.
 
 Publish a self-contained build (per platform):
 
@@ -32,7 +32,10 @@ dotnet publish src/Lp100a.App -c Release -r win-x64   --self-contained -p:Publis
 ```
 src/
   Lp100a.Core/   # NO UI: SerialReader, StreamFramer, FrameParser, Lp100Reading.
+                 #   Data logging (Phase 1): TxOverTracker, TxOverRecord, TxLogWriter.
                  #   Reusable by a future headless logger — keep it UI-free.
+tests/
+  Lp100a.Core.Tests/   # xUnit — Core logic only (no UI). Put new nontrivial logic here.
   Lp100a.App/    # Avalonia MVVM
                  #   Services/  MeterService (single connection), PortIdentity, UpdateService, AppConfig
                  #   ViewModels/ MainWindow, Setup, Vector, ViewModelBase
