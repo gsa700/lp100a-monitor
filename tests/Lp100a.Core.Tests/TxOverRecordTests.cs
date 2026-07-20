@@ -37,6 +37,17 @@ public class TxOverRecordTests
         Assert.Equal("no", cols[^1]);
     }
 
+    [Theory]
+    [InlineData(1097.3)]   // kilowatt station: must not gain a thousands-separator comma
+    [InlineData(1500.0)]
+    public void KilowattPowerStaysOneColumn(double watts)
+    {
+        var cols = (Sample() with { PeakForwardW = watts }).ToCsvRow().Split(',');
+        Assert.Equal(TxOverRecord.CsvHeader.Split(',').Length, cols.Length);
+        Assert.Equal(watts.ToString("F1", System.Globalization.CultureInfo.InvariantCulture), cols[3]);
+        Assert.DoesNotContain(",", cols[3]);
+    }
+
     [Fact]
     public void NullFrequencyRendersEmptyColumn()
     {

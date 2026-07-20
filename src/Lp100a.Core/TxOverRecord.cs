@@ -56,18 +56,21 @@ public sealed record TxOverRecord
     /// <summary>One CSV row (invariant culture) with columns matching <see cref="CsvHeader"/>.</summary>
     public string ToCsvRow()
     {
+        // Fixed-point ("F"), never "N": the N format inserts a group separator (a comma in the
+        // invariant culture), which would split a >= 1000 value — e.g. a kilowatt PeakFwd_W — into
+        // two CSV columns. F never groups.
         var inv = CultureInfo.InvariantCulture;
         return string.Join(',',
             Start.ToString("yyyy-MM-dd HH:mm:ss", inv),
-            FreqMhz is { } f ? f.ToString("N4", inv) : "",
+            FreqMhz is { } f ? f.ToString("F4", inv) : "",
             DurationSeconds.ToString(inv),
-            PeakForwardW.ToString("N1", inv),
-            MaxSwr.ToString("N2", inv),
-            MinSwr.ToString("N2", inv),
-            MinReturnLossDb.ToString("N1", inv),
-            ResistanceOhms.ToString("N1", inv),
-            ReactanceOhms.ToString("N1", inv),
-            PhaseDeg.ToString("N1", inv),
+            PeakForwardW.ToString("F1", inv),
+            MaxSwr.ToString("F2", inv),
+            MinSwr.ToString("F2", inv),
+            MinReturnLossDb.ToString("F1", inv),
+            ResistanceOhms.ToString("F1", inv),
+            ReactanceOhms.ToString("F1", inv),
+            PhaseDeg.ToString("F1", inv),
             PowerRange.ToString(inv),
             TimedOut ? "yes" : "no");
     }
