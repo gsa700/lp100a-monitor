@@ -5,6 +5,19 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.6-beta] - 2026-07-20
+
+### Added
+- **Per-transmission logging (CSV)** — an opt-in **Setup → Logging** toggle records one row per
+  over: timestamp, duration, peak forward power, min/max SWR, min return loss, and the load
+  **R + jX** (with phase) sampled at peak power. An **Open log** button opens it in your
+  spreadsheet app (or reveals the folder before the first row). The log lives at
+  `%AppData%/Lp100aMonitor/TXlog.csv` (Windows) / `~/.config/Lp100aMonitor/TXlog.csv` (Linux),
+  capped to a rolling 2000 rows. An over is counted only on a confirmed key-up, so a serial
+  dropout mid-over won't split or cut it short. The frequency column stays empty until CAT radio
+  support lands. First port of the logging subsystem from the retired PowerShell w2-monitor, where
+  the LP-100A's phase/impedance make the data far more useful.
+
 ## [0.9.5-beta] - 2026-07-17
 
 ### Changed
