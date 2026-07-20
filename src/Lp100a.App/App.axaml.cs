@@ -15,6 +15,7 @@ public partial class App : Application
 {
     private AppConfig _config = new();
     private MeterService _meter = null!;
+    private TxLoggingService _logging = null!;
     private DisplaySettings _display = null!;
 
     private SetupViewModel _setupVm = null!;
@@ -37,7 +38,12 @@ public partial class App : Application
             _config.ApplyTo(_display);
 
             _meter = new MeterService();
-            _setupVm = new SetupViewModel(_meter, _display) { CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup };
+            _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx);
+            _setupVm = new SetupViewModel(_meter, _display, _logging)
+            {
+                CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup,
+                LogEachTx = _config.LogEachTx,
+            };
             _vectorVm = new VectorViewModel(_meter);
 
             // Follow the cable by its chip serial across COM renumbering, then auto-connect.
@@ -201,10 +207,12 @@ public partial class App : Application
             _config.Port = port;
             if (port is not null && PortIdentity.SerialFor(port) is { } serial) _config.Serial = serial;
             _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
+            _config.LogEachTx = _setupVm.LogEachTx;
             _config.CaptureFrom(_display);
             ConfigStore.Save(_config);
         }
         catch { /* best effort */ }
+        _logging.Dispose();
         _meter.Dispose();
     }
 }

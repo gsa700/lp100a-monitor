@@ -81,6 +81,20 @@
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
+    <!-- Logging -->
+    <TextBlock Text="LOGGING" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <Grid ColumnDefinitions="*,Auto">
+      <CheckBox Grid.Column="0" Content="Log each transmission (CSV)"
+                IsChecked="{Binding LogEachTx}" VerticalAlignment="Center"/>
+      <Button Grid.Column="1" Content="Open log" Command="{Binding OpenLogCommand}"/>
+    </Grid>
+    <TextBlock Text="{Binding LogStatusText}" Foreground="{Binding LogStatusBrush}"
+               TextWrapping="Wrap" FontSize="12"/>
+    <TextBlock Text="One row per over: time, duration, peak power, min/max SWR, and R+jX at peak. Frequency fills in once a radio (CAT) is linked."
+               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
     <!-- Updates -->
     <TextBlock Text="UPDATES" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
     <TextBlock Text="{Binding UpdateStatus}" Foreground="{Binding UpdateStatusBrush}" TextWrapping="Wrap"/>

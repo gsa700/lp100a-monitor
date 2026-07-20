@@ -19,6 +19,7 @@ public sealed class AppConfig
     public string? Port { get; set; }
     public string? Serial { get; set; }   // FTDI/USB chip serial, so the cable is followed across COM renumbering
     public bool CheckUpdatesAtStartup { get; set; }
+    public bool LogEachTx { get; set; }
     public DisplayConfig Display { get; set; } = new();
 
     public void ApplyTo(DisplaySettings d)
@@ -92,7 +93,8 @@ public static class ConfigStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
-    private static string Path
+    /// <summary>Per-user app-data directory (created on access). Home for config + the TX log.</summary>
+    public static string DataDir
     {
         get
         {
@@ -100,9 +102,14 @@ public static class ConfigStore
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "Lp100aMonitor");
             Directory.CreateDirectory(dir);
-            return System.IO.Path.Combine(dir, "config.json");
+            return dir;
         }
     }
+
+    /// <summary>Path of the per-transmission CSV log.</summary>
+    public static string LogFilePath => System.IO.Path.Combine(DataDir, "TXlog.csv");
+
+    private static string Path => System.IO.Path.Combine(DataDir, "config.json");
 
     public static AppConfig Load()
     {

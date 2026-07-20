@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using Avalonia;
 using Avalonia.Media;
 using Lp100a.App.Services;
@@ -11,18 +12,22 @@ namespace Lp100a.App.ViewModels;
 public sealed class SetupViewModel : ViewModelBase
 {
     private readonly MeterService _meter;
+    private readonly TxLoggingService _logging;
 
-    public SetupViewModel(MeterService meter, DisplaySettings display)
+    public SetupViewModel(MeterService meter, DisplaySettings display, TxLoggingService logging)
     {
         _meter = meter;
         Display = display;
+        _logging = logging;
         _meter.StateChanged += OnStateChanged;
         _meter.ReadingReceived += OnReading;
+        _logging.Changed += OnLogChanged;
 
         ConnectCommand = new RelayCommand(ToggleConnect, () => IsConnected || SelectedPort is not null);
         RefreshCommand = new RelayCommand(RefreshPorts);
         UpdateCommand = new RelayCommand(() => _ = UpdateButtonAsync(), () => !_updateBusy);
         OpenReleaseCommand = new RelayCommand(OpenRelease);
+        OpenLogCommand = new RelayCommand(OpenLog);
         ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
         CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
         UpdateStatus = $"You have {UpdateService.CurrentVersion}.";
@@ -36,8 +41,43 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand RefreshCommand { get; }
     public RelayCommand UpdateCommand { get; }
     public RelayCommand OpenReleaseCommand { get; }
+    public RelayCommand OpenLogCommand { get; }
     public RelayCommand ResetPeakCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
+
+    // --- logging ---
+    private bool _logEachTx;
+    public bool LogEachTx
+    {
+        get => _logEachTx;
+        set
+        {
+            if (!SetProperty(ref _logEachTx, value)) return;
+            _logging.Enabled = value;
+            OnLogChanged();
+        }
+    }
+
+    public string LogStatusText =>
+        _logging.LastError is { } err ? $"Log error: {err}"
+        : !LogEachTx ? "Logging off."
+        : _logging.LoggedCount == 0 ? "Logging on — waiting for the first transmission."
+        : $"{_logging.LoggedCount} transmission(s) logged this session.";
+
+    public IBrush LogStatusBrush => _logging.LastError is not null ? Palette.RedBrush : Palette.DimBrush;
+
+    private void OnLogChanged()
+    {
+        OnPropertyChanged(nameof(LogStatusText));
+        OnPropertyChanged(nameof(LogStatusBrush));
+    }
+
+    private void OpenLog()
+    {
+        // Open the CSV in the default handler (Excel) once it exists; otherwise reveal the folder.
+        var target = File.Exists(_logging.LogPath) ? _logging.LogPath : ConfigStore.DataDir;
+        try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); } catch { /* ignore */ }
+    }
 
     // Meter SWR alarm setpoint, shown/settable here so it's reachable even when the main-window
     // METER ALARM row is toggled off.
