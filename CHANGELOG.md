@@ -5,6 +5,19 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.8-beta] - 2026-07-23
+
+### Changed
+- **TX log: `MinSWR` replaced by `SWR_at_peak`.** The minimum was meaningless — during the key-up
+  ramp and key-down decay there's too little power for the meter to measure reflection, so it
+  reports ~1.00, and a running minimum latched onto that on *every* over (125 of 125 logged rows
+  read exactly 1.00). SWR is now sampled at peak forward power, alongside R/X/phase, so each row is
+  one coherent snapshot of the same instant and reflects the real operating SWR. `MaxSWR` (worst
+  seen anywhere in the over) is unchanged and was never affected.
+
+  This is a schema change: an existing `TXlog.csv` is automatically archived aside as
+  `TXlog_<timestamp>.csv` and a fresh one started, so earlier data is kept but not mixed.
+
 ## [0.9.7-beta] - 2026-07-20
 
 ### Fixed

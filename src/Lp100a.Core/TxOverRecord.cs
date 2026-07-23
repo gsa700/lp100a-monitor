@@ -19,8 +19,14 @@ public sealed record TxOverRecord
 
     public int DurationSeconds { get; init; }
     public double PeakForwardW { get; init; }
+    /// <summary>Worst SWR seen anywhere in the over.</summary>
     public double MaxSwr { get; init; }
-    public double MinSwr { get; init; }
+
+    /// <summary>SWR at the peak-power sample — the representative "while actually running power"
+    /// value, captured at the same instant as R/X/phase so the row is one coherent snapshot.
+    /// Replaces a min-SWR statistic, which always latched onto the ~1.00 the meter reports during
+    /// the key-up ramp / key-down decay, when there's too little power to measure reflection.</summary>
+    public double SwrAtPeak { get; init; }
 
     /// <summary>Resistive part of the load at peak power, R = |Z|·cos(phase).</summary>
     public double ResistanceOhms { get; init; }
@@ -51,7 +57,7 @@ public sealed record TxOverRecord
     /// <summary>CSV header matching <see cref="ToCsvRow"/>. <see cref="TxLogWriter"/> archives any
     /// existing log whose first line differs from this, so the schema can evolve safely.</summary>
     public const string CsvHeader =
-        "Timestamp,Freq_MHz,Duration_s,PeakFwd_W,MaxSWR,MinSWR,MinReturnLoss_dB,R_ohm,X_ohm,Phase_deg,Range,TimedOut";
+        "Timestamp,Freq_MHz,Duration_s,PeakFwd_W,MaxSWR,SWR_at_peak,MinReturnLoss_dB,R_ohm,X_ohm,Phase_deg,Range,TimedOut";
 
     /// <summary>One CSV row (invariant culture) with columns matching <see cref="CsvHeader"/>.</summary>
     public string ToCsvRow()
@@ -66,7 +72,7 @@ public sealed record TxOverRecord
             DurationSeconds.ToString(inv),
             PeakForwardW.ToString("F1", inv),
             MaxSwr.ToString("F2", inv),
-            MinSwr.ToString("F2", inv),
+            SwrAtPeak.ToString("F2", inv),
             MinReturnLossDb.ToString("F1", inv),
             ResistanceOhms.ToString("F1", inv),
             ReactanceOhms.ToString("F1", inv),

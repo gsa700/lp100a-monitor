@@ -42,11 +42,13 @@ W2 header (`Write-TxLog`, W2App.ps1:558):
 `Timestamp,Meter,Freq_MHz,Duration_s,PeakFwd_W,MaxSWR,MinReturnLoss_dB,Sensor,Range,SensorType,TimedOut`
 
 **LP-100A header (proposed):**
-`Timestamp,Freq_MHz,Duration_s,PeakFwd_W,MaxSWR,MinSWR,MinReturnLoss_dB,R_ohm,X_ohm,Phase_deg,Range,TimedOut`
+`Timestamp,Freq_MHz,Duration_s,PeakFwd_W,MaxSWR,SWR_at_peak,MinReturnLoss_dB,R_ohm,X_ohm,Phase_deg,Range,TimedOut`
 
 - Drop `Meter,Sensor,SensorType` (single meter, no samplers).
 - Add `R_ohm,X_ohm,Phase_deg` (the LP-100A's reason for existing) captured at peak power; add
-  `MinSWR` (resonance depth).
+  `SWR_at_peak`. NOTE: this started life as `MinSWR` (resonance depth) and was **wrong** — the meter
+  reports ~1.00 during the key-up ramp / key-down decay (too little power to measure reflection), so a
+  running minimum pinned every over to 1.00. Sample SWR at peak power instead, with everything else.
 - `MinReturnLoss_dB = -20*log10((swr-1)/(swr+1))` for swr>1 (unchanged from W2App.ps1:564).
 - Writer behavior (W2App.ps1:556-573): header-mismatch → rename old file aside; append row; then
   trim to rolling `logMax` keeping the header. UTF-8.

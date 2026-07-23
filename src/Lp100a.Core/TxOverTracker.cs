@@ -25,7 +25,7 @@ public sealed class TxOverTracker
     private DateTime _lastTx;
     private double _peakF;
     private double _maxSwr;
-    private double _minSwr;
+    private double _swrAtPeak;
     private double _rAtPeak;
     private double _xAtPeak;
     private double _phaseAtPeak;
@@ -83,7 +83,7 @@ public sealed class TxOverTracker
         _lastTx = now;
         _peakF = 0.0;
         _maxSwr = 0.0;
-        _minSwr = double.MaxValue;
+        _swrAtPeak = 0.0;
         _rAtPeak = _xAtPeak = _phaseAtPeak = 0.0;
         _rangeAtPeak = 0;
         _freqMhz = null;
@@ -92,10 +92,14 @@ public sealed class TxOverTracker
     private void Accumulate(Lp100Reading r)
     {
         if (r.Swr > _maxSwr) _maxSwr = r.Swr;
-        if (r.Swr >= 1.0) _minSwr = Math.Min(_minSwr, r.Swr);
+        // Everything else is sampled at peak forward power, so the row is one coherent snapshot.
+        // SWR specifically MUST come from here: at the key-up ramp / key-down decay there's too
+        // little power to measure reflection and the meter reports ~1.00, which would dominate any
+        // running minimum (it pinned every logged over to 1.00 in 0.9.7-beta).
         if (r.ForwardPowerW > _peakF)
         {
             _peakF = r.ForwardPowerW;
+            _swrAtPeak = r.Swr;
             _rAtPeak = r.ResistanceOhms;
             _xAtPeak = r.ReactanceOhms;
             _phaseAtPeak = r.PhaseDeg;
@@ -116,7 +120,7 @@ public sealed class TxOverTracker
             DurationSeconds = duration,
             PeakForwardW = _peakF,
             MaxSwr = _maxSwr,
-            MinSwr = _minSwr == double.MaxValue ? _maxSwr : _minSwr,
+            SwrAtPeak = _swrAtPeak,
             ResistanceOhms = _rAtPeak,
             ReactanceOhms = _xAtPeak,
             PhaseDeg = _phaseAtPeak,

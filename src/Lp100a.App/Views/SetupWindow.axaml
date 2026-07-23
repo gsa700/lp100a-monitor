@@ -90,7 +90,7 @@
     </Grid>
     <TextBlock Text="{Binding LogStatusText}" Foreground="{Binding LogStatusBrush}"
                TextWrapping="Wrap" FontSize="12"/>
-    <TextBlock Text="One row per over: time, duration, peak power, min/max SWR, and R+jX at peak. Frequency fills in once a radio (CAT) is linked."
+    <TextBlock Text="One row per over: time, duration, peak power, worst SWR, and SWR + R+jX sampled at peak power. Frequency fills in once a radio (CAT) is linked."
                Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>

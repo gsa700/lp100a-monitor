@@ -83,16 +83,33 @@ public class TxOverTrackerTests
     }
 
     [Fact]
-    public void TracksMinAndMaxSwr()
+    public void TracksMaxSwrAndSwrAtPeakPower()
     {
         var t = new TxOverTracker();
-        Assert.Null(t.Observe(R(100, swr: 2.0), null, T0));
-        Assert.Null(t.Observe(R(100, swr: 1.4), null, T0.AddSeconds(1)));
-        Assert.Null(t.Observe(R(100, swr: 1.8), null, T0.AddSeconds(2)));
+        Assert.Null(t.Observe(R(50, swr: 2.0), null, T0));
+        Assert.Null(t.Observe(R(100, swr: 1.4), null, T0.AddSeconds(1)));   // peak power here
+        Assert.Null(t.Observe(R(80, swr: 1.8), null, T0.AddSeconds(2)));
         var over = t.Observe(R(0), null, T0.AddSeconds(5));
         Assert.NotNull(over);
-        Assert.Equal(2.0, over!.MaxSwr);
-        Assert.Equal(1.4, over.MinSwr);
+        Assert.Equal(2.0, over!.MaxSwr);      // worst anywhere in the over
+        Assert.Equal(1.4, over.SwrAtPeak);    // the value at max forward power
+    }
+
+    [Fact]
+    public void RampTransientDoesNotDominateSwrAtPeak()
+    {
+        // Regression for 0.9.7-beta: the meter reports ~1.00 while power ramps up and decays,
+        // because there's too little power to measure reflection. A running MINIMUM latched onto
+        // that on every over (125/125 logged rows read exactly 1.00). Sampling at peak power is
+        // immune, so the real operating SWR survives.
+        var t = new TxOverTracker();
+        Assert.Null(t.Observe(R(0.5, swr: 1.00), null, T0));                 // key-up ramp
+        Assert.Null(t.Observe(R(1000, swr: 1.24), null, T0.AddSeconds(1)));  // real operating point
+        Assert.Null(t.Observe(R(0.4, swr: 1.00), null, T0.AddSeconds(2)));   // key-down decay
+        var over = t.Observe(R(0), null, T0.AddSeconds(5));
+        Assert.NotNull(over);
+        Assert.Equal(1.24, over!.SwrAtPeak);
+        Assert.NotEqual(1.00, over.SwrAtPeak);
     }
 
     [Fact]

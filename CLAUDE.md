@@ -4,7 +4,7 @@ Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wa
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
 **.NET 8 + Avalonia 11.2.1**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **0.9.7-beta**.
+By David Erickson (AB0R). Status: **0.9.8-beta**.
 
 This app's .NET 8 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).

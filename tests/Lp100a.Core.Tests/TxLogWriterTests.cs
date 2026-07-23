@@ -26,7 +26,7 @@ public class TxLogWriterTests : IDisposable
         DurationSeconds = seconds,
         PeakForwardW = 100,
         MaxSwr = 1.2,
-        MinSwr = 1.1,
+        SwrAtPeak = 1.1,
         PowerRange = 0,
     };
 

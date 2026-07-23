@@ -11,7 +11,7 @@ public class TxOverRecordTests
         DurationSeconds = 12,
         PeakForwardW = 105.4,
         MaxSwr = 1.53,
-        MinSwr = 1.21,
+        SwrAtPeak = 1.21,
         ResistanceOhms = 48.2,
         ReactanceOhms = -6.1,
         PhaseDeg = -7.2,
