@@ -20,6 +20,8 @@ public sealed class AppConfig
     public string? Serial { get; set; }   // FTDI/USB chip serial, so the cable is followed across COM renumbering
     public bool CheckUpdatesAtStartup { get; set; }
     public bool LogEachTx { get; set; }
+    public bool RigctldEnabled { get; set; }
+    public string? RigctldEndpoint { get; set; }   // "host" or "host:port"; blank = 127.0.0.1:4532
     public DisplayConfig Display { get; set; } = new();
 
     public void ApplyTo(DisplaySettings d)

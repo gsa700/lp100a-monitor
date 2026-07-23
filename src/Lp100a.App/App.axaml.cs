@@ -15,6 +15,7 @@ public partial class App : Application
 {
     private AppConfig _config = new();
     private MeterService _meter = null!;
+    private FrequencyService _frequency = null!;
     private TxLoggingService _logging = null!;
     private DisplaySettings _display = null!;
 
@@ -38,8 +39,10 @@ public partial class App : Application
             _config.ApplyTo(_display);
 
             _meter = new MeterService();
-            _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx);
-            _setupVm = new SetupViewModel(_meter, _display, _logging)
+            _frequency = new FrequencyService(_config.RigctldEnabled,
+                _config.RigctldEndpoint ?? FrequencyService.DefaultEndpoint);
+            _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx, _frequency);
+            _setupVm = new SetupViewModel(_meter, _display, _logging, _frequency)
             {
                 CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup,
                 LogEachTx = _config.LogEachTx,
@@ -208,11 +211,14 @@ public partial class App : Application
             if (port is not null && PortIdentity.SerialFor(port) is { } serial) _config.Serial = serial;
             _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
             _config.LogEachTx = _setupVm.LogEachTx;
+            _config.RigctldEnabled = _setupVm.RigctldEnabled;
+            _config.RigctldEndpoint = _setupVm.RigctldEndpoint;
             _config.CaptureFrom(_display);
             ConfigStore.Save(_config);
         }
         catch { /* best effort */ }
         _logging.Dispose();
+        _frequency.Dispose();
         _meter.Dispose();
     }
 }

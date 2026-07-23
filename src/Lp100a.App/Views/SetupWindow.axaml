@@ -81,6 +81,24 @@
 
     <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
+    <!-- Frequency (CAT) -->
+    <TextBlock Text="FREQUENCY (CAT)" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+    <CheckBox Content="Read frequency from Hamlib rigctld" IsChecked="{Binding RigctldEnabled}"/>
+    <Grid ColumnDefinitions="*,Auto,Auto" IsEnabled="{Binding RigctldEnabled}">
+      <TextBox Grid.Column="0" Text="{Binding RigctldEndpoint}" Watermark="127.0.0.1:4532"
+               VerticalAlignment="Center"/>
+      <Button Grid.Column="1" Content="Apply" Command="{Binding ApplyRigctldCommand}" Margin="6,0,0,0"/>
+      <TextBlock Grid.Column="2" Text="{Binding FreqText}" FontFamily="Consolas" FontWeight="Bold"
+                 Foreground="{StaticResource BlueBrush}" VerticalAlignment="Center"
+                 MinWidth="110" Margin="8,0,0,0" HorizontalAlignment="Right"/>
+    </Grid>
+    <TextBlock Text="{Binding FreqStatusText}" Foreground="{Binding FreqStatusBrush}"
+               TextWrapping="Wrap" FontSize="12"/>
+    <TextBlock Text="rigctld shares one CAT port across apps, so this won't fight your logger. Run e.g. rigctld -m 2028 -r COM5, or -m 1 for a dummy rig to test with."
+               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+
+    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+
     <!-- Logging -->
     <TextBlock Text="LOGGING" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
     <Grid ColumnDefinitions="*,Auto">

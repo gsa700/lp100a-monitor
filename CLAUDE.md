@@ -4,7 +4,7 @@ Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wa
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
 **.NET 8 + Avalonia 11.2.1**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **0.9.8-beta**.
+By David Erickson (AB0R). Status: **0.9.9-beta**.
 
 This app's .NET 8 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
@@ -33,6 +33,9 @@ dotnet publish src/Lp100a.App -c Release -r win-x64   --self-contained -p:Publis
 src/
   Lp100a.Core/   # NO UI: SerialReader, StreamFramer, FrameParser, Lp100Reading.
                  #   Data logging (Phase 1): TxOverTracker, TxOverRecord, TxLogWriter.
+                 #   CAT frequency (Phase 2): IFrequencySource, RigctldProtocol,
+                 #     RigctldFrequencySource. The interface is the seam for future
+                 #     native Elecraft/Kenwood serial + FlexRadio network sources.
                  #   Reusable by a future headless logger — keep it UI-free.
 tests/
   Lp100a.Core.Tests/   # xUnit — Core logic only (no UI). Put new nontrivial logic here.

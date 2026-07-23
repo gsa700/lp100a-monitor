@@ -7,19 +7,23 @@ namespace Lp100a.App.Services;
 /// every frame; when an over completes and logging is enabled, appends it via <see cref="TxLogWriter"/>.
 ///
 /// All <see cref="MeterService"/> events arrive on the UI thread, so this needs no locking, and the
-/// once-per-over file write is cheap enough to stay on that thread. Frequency is null until CAT is
-/// wired (Phase 2) — the log's Freq column simply stays empty.
+/// once-per-over file write is cheap enough to stay on that thread. Frequency comes from the
+/// optional <see cref="FrequencyService"/>; with no source configured the log's Freq column stays
+/// empty rather than carrying a guess.
 /// </summary>
 public sealed class TxLoggingService : IDisposable
 {
     private readonly MeterService _meter;
+    private readonly FrequencyService? _frequency;
     private readonly TxOverTracker _tracker = new();
     private readonly TxLogWriter _writer;
     private bool _wasLive;
 
-    public TxLoggingService(MeterService meter, string logPath, bool enabled)
+    public TxLoggingService(MeterService meter, string logPath, bool enabled,
+        FrequencyService? frequency = null)
     {
         _meter = meter;
+        _frequency = frequency;
         _writer = new TxLogWriter(logPath);
         Enabled = enabled;
         _meter.ReadingReceived += OnReading;
@@ -53,7 +57,9 @@ public sealed class TxLoggingService : IDisposable
 
     private void Feed(Lp100Reading? reading, bool connected)
     {
-        var over = _tracker.Observe(reading, freqMhz: null, now: DateTime.Now, connected: connected);
+        // The tracker keeps the latest non-null frequency seen during the over, so a brief CAT
+        // dropout mid-transmission doesn't blank the column.
+        var over = _tracker.Observe(reading, _frequency?.FreqMhz, DateTime.Now, connected);
         if (over is null || !Enabled) return;
 
         try

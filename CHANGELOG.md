@@ -5,6 +5,25 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.9-beta] - 2026-07-23
+
+### Added
+- **Live frequency from a radio (CAT), via Hamlib `rigctld`** — **Setup → Frequency (CAT)** takes a
+  `host:port` (default `127.0.0.1:4532`), shows the live dial reading and connection state, and
+  stamps the operating frequency onto every logged transmission, filling the log's `Freq_MHz`
+  column. The frequency in force at any point during an over is kept, so a brief CAT dropout
+  mid-transmission doesn't blank it.
+
+  rigctld is the portable path on purpose: Hamlib supports virtually every rig, and rigctld is a
+  *sharing* daemon that owns the CAT port and serves many clients — so the monitor never fights
+  your logger or SmartSDR for a serial port. To try it without a radio, run `rigctld -m 1` (dummy).
+
+  Under the hood this lands as an `IFrequencySource` seam in the UI-free core, so native Elecraft /
+  Kenwood serial and FlexRadio network sources can slot in later without disturbing the log path.
+  PTT/TX state is read too where the rig reports it (and stays *unknown* rather than "receiving"
+  when it can't) — that's the groundwork for attributing overs to the right radio on a dual-coupler,
+  two-radio station, where the meter itself can't say which sampler is active.
+
 ## [0.9.8-beta] - 2026-07-23
 
 ### Changed

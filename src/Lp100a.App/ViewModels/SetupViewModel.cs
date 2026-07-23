@@ -13,21 +13,28 @@ public sealed class SetupViewModel : ViewModelBase
 {
     private readonly MeterService _meter;
     private readonly TxLoggingService _logging;
+    private readonly FrequencyService _frequency;
 
-    public SetupViewModel(MeterService meter, DisplaySettings display, TxLoggingService logging)
+    public SetupViewModel(MeterService meter, DisplaySettings display, TxLoggingService logging,
+        FrequencyService frequency)
     {
         _meter = meter;
         Display = display;
         _logging = logging;
+        _frequency = frequency;
         _meter.StateChanged += OnStateChanged;
         _meter.ReadingReceived += OnReading;
         _logging.Changed += OnLogChanged;
+        _frequency.Changed += OnFrequencyChanged;
+        _rigctldEnabled = frequency.Enabled;
+        _rigctldEndpoint = frequency.Endpoint;
 
         ConnectCommand = new RelayCommand(ToggleConnect, () => IsConnected || SelectedPort is not null);
         RefreshCommand = new RelayCommand(RefreshPorts);
         UpdateCommand = new RelayCommand(() => _ = UpdateButtonAsync(), () => !_updateBusy);
         OpenReleaseCommand = new RelayCommand(OpenRelease);
         OpenLogCommand = new RelayCommand(OpenLog);
+        ApplyRigctldCommand = new RelayCommand(ApplyRigctld);
         ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
         CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
         UpdateStatus = $"You have {UpdateService.CurrentVersion}.";
@@ -42,6 +49,7 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand UpdateCommand { get; }
     public RelayCommand OpenReleaseCommand { get; }
     public RelayCommand OpenLogCommand { get; }
+    public RelayCommand ApplyRigctldCommand { get; }
     public RelayCommand ResetPeakCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
 
@@ -70,6 +78,47 @@ public sealed class SetupViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(LogStatusText));
         OnPropertyChanged(nameof(LogStatusBrush));
+    }
+
+    // --- frequency (CAT) ---
+    private bool _rigctldEnabled;
+    public bool RigctldEnabled
+    {
+        get => _rigctldEnabled;
+        set
+        {
+            if (!SetProperty(ref _rigctldEnabled, value)) return;
+            _frequency.Enabled = value;
+            OnFrequencyChanged();
+        }
+    }
+
+    private string _rigctldEndpoint = FrequencyService.DefaultEndpoint;
+    public string RigctldEndpoint
+    {
+        get => _rigctldEndpoint;
+        set => SetProperty(ref _rigctldEndpoint, value);
+    }
+
+    public string FreqStatusText => _frequency.Status;
+    public IBrush FreqStatusBrush => _frequency.StatusIsError ? Palette.RedBrush
+        : _frequency.IsConnected ? Palette.GreenBrush : Palette.DimBrush;
+    public string FreqText => _frequency.FreqText;
+
+    private void OnFrequencyChanged()
+    {
+        OnPropertyChanged(nameof(FreqStatusText));
+        OnPropertyChanged(nameof(FreqStatusBrush));
+        OnPropertyChanged(nameof(FreqText));
+    }
+
+    /// <summary>Apply the typed endpoint and reconnect (explicit, so we don't restart per keystroke).</summary>
+    private void ApplyRigctld()
+    {
+        _frequency.Endpoint = RigctldEndpoint;
+        RigctldEndpoint = _frequency.Endpoint;   // echo back the normalized value
+        _frequency.Restart();
+        OnFrequencyChanged();
     }
 
     private void OpenLog()
