@@ -30,7 +30,7 @@
           <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
                      Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
-          <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <Border Height="1" Background="{StaticResource TrackBrush}"/>
 
           <TextBlock Text="RADIO FREQUENCY (CAT)" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
           <CheckBox Content="Read frequency from Hamlib rigctld" IsChecked="{Binding RigctldEnabled}"/>
@@ -77,7 +77,7 @@
             <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}" Margin="0,3"/>
           </UniformGrid>
 
-          <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <Border Height="1" Background="{StaticResource TrackBrush}"/>
 
           <TextBlock Text="BEHAVIOUR" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
           <StackPanel Orientation="Horizontal" Spacing="8">
