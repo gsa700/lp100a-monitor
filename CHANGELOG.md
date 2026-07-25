@@ -5,6 +5,16 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.10-beta] - 2026-07-25
+
+### Fixed
+- **App crash when the CAT (rigctld) source was disabled after the daemon went away.** Closing the
+  upstream rigctld provider (e.g. MultiCAT) left the frequency poller retrying, as intended — but
+  then unticking "Read frequency from rigctld" in Setup could crash the whole app. The poll loop's
+  error handler used an exception filter that let a socket error escape as an unhandled
+  background-thread exception when it raced shutdown. It now catches unconditionally and exits
+  cleanly. Toggling the source off — or losing rigctld and getting it back — is safe either way.
+
 ## [0.9.9-beta] - 2026-07-23
 
 ### Added

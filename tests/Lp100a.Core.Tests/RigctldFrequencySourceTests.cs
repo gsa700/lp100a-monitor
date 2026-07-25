@@ -115,6 +115,59 @@ public class RigctldFrequencySourceTests
         Assert.False(source.IsConnected);
     }
 
+    /// <summary>A daemon that accepts a connection then immediately drops it, so the client's poll
+    /// thread is perpetually mid-error — the state MultiCAT/rigctld going away puts the source in.</summary>
+    private sealed class DroppingRigctld : IDisposable
+    {
+        private readonly TcpListener _listener;
+        private readonly CancellationTokenSource _cts = new();
+
+        public DroppingRigctld()
+        {
+            _listener = new TcpListener(IPAddress.Loopback, 0);
+            _listener.Start();
+            Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!_cts.IsCancellationRequested)
+                        (await _listener.AcceptTcpClientAsync(_cts.Token)).Close();  // accept, drop
+                }
+                catch { /* listener torn down */ }
+            });
+        }
+
+        public int Port { get; }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            try { _listener.Stop(); } catch { /* ignore */ }
+            _cts.Dispose();
+        }
+    }
+
+    [Fact]
+    public void StopWhileErroringDoesNotCrash()
+    {
+        // Regression for the 0.9.9-beta crash: disabling the source after rigctld/MultiCAT went away
+        // raced Stop() against a socket exception on the poll thread. The old `when (_running)` catch
+        // filter let it escape as an unhandled background-thread exception and killed the whole app.
+        // Repeat the start/stop-while-erroring cycle to exercise the race; a regression crashes the
+        // test host, so simply completing is the assertion.
+        for (var i = 0; i < 10; i++)
+        {
+            using var fake = new DroppingRigctld();
+            var source = new RigctldFrequencySource("127.0.0.1", fake.Port, pollMs: 100);
+            source.Start();
+            Assert.True(WaitFor(() => source.StatusIsError), "never entered the error/reconnect state");
+            source.Stop();
+            Assert.False(source.IsConnected);
+            source.Dispose();
+        }
+    }
+
     [Fact]
     public void StopEndsCleanlyAndClearsReadings()
     {

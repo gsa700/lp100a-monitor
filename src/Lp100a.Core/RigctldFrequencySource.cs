@@ -111,8 +111,14 @@ public sealed class RigctldFrequencySource : IFrequencySource
                     Sleep(_pollMs);
                 }
             }
-            catch (Exception ex) when (_running)
+            catch (Exception ex)
             {
+                // Stop()/Dispose() closes the socket under the poll thread, so an IO exception here
+                // is expected during teardown. This once used a `when (_running)` filter — which let
+                // the exception ESCAPE the thread (unhandled -> process crash) whenever it raced
+                // Stop() flipping _running to false, e.g. disabling the source after rigctld/MultiCAT
+                // went away. Catch unconditionally; if we're shutting down, just exit the loop.
+                if (!_running) break;
                 SetReadings(null, null);
                 SetStatus($"{_host}:{_port} — {Describe(ex)}", isError: true, connected: false);
                 Sleep(ReconnectDelayMs);
