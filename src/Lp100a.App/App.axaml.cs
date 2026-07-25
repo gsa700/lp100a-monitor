@@ -21,10 +21,12 @@ public partial class App : Application
 
     private SetupViewModel _setupVm = null!;
     private VectorViewModel _vectorVm = null!;
+    private LogViewModel? _logVm;
 
     private MainWindow _mainWindow = null!;
     private SetupWindow? _setupWindow;
     private VectorWindow? _vectorWindow;
+    private LogWindow? _logWindow;
 
     public bool IsExiting { get; private set; }
 
@@ -96,6 +98,26 @@ public partial class App : Application
     /// <summary>Called by the main-window "Vector" button; the flag drives the window.</summary>
     public void ShowVector() => _display.ShowVectorWindow = true;
 
+    /// <summary>Open the TX log viewer (Setup → Logging → View log).</summary>
+    public void ShowLog()
+    {
+        if (_logWindow is null)
+        {
+            // Built on demand: the view model reads the CSV and then follows the logging service,
+            // so there's no reason to hold it while the window is closed.
+            _logVm = new LogViewModel(_logging);
+            _logWindow = new LogWindow { DataContext = _logVm, Topmost = _display.AlwaysOnTop };
+            RestoreLogBounds(_logWindow);
+            _logWindow.Show(_mainWindow);   // owned by main -> closes with it
+        }
+        else
+        {
+            _logVm?.Refresh();
+            _logWindow.Show();
+        }
+        _logWindow.Activate();
+    }
+
     /// <summary>Close the app so the staged update helper can swap the executable and relaunch.</summary>
     public void ExitForUpdate() => _mainWindow.Close();
 
@@ -119,6 +141,19 @@ public partial class App : Application
         if (!IsExiting) _display.ShowVectorWindow = false;
     }
 
+    public void NotifyLogClosing(LogWindow w)
+    {
+        _config.LogX = w.Position.X;
+        _config.LogY = w.Position.Y;
+        _config.LogW = w.Width;
+        _config.LogH = w.Height;
+        // Unhook from the logging service so a closed window isn't still re-reading the CSV on
+        // every over.
+        _logVm?.Detach();
+        _logVm = null;
+        _logWindow = null;
+    }
+
     private void OnDisplayChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -131,6 +166,7 @@ public partial class App : Application
                 _mainWindow.Topmost = _display.AlwaysOnTop;
                 if (_setupWindow is not null) _setupWindow.Topmost = _display.AlwaysOnTop;
                 if (_vectorWindow is not null) _vectorWindow.Topmost = _display.AlwaysOnTop;
+                if (_logWindow is not null) _logWindow.Topmost = _display.AlwaysOnTop;
                 break;
         }
     }
@@ -184,6 +220,17 @@ public partial class App : Application
         }
     }
 
+    private void RestoreLogBounds(Window w)
+    {
+        if (_config.LogW is > 400) w.Width = _config.LogW.Value;
+        if (_config.LogH is > 240) w.Height = _config.LogH.Value;
+        if (_config is { LogX: not null, LogY: not null })
+        {
+            w.WindowStartupLocation = WindowStartupLocation.Manual;
+            w.Position = new PixelPoint((int)_config.LogX.Value, (int)_config.LogY.Value);
+        }
+    }
+
     private void SaveAndCleanup()
     {
         if (IsExiting) return;   // main.Closing fires once; guard against re-entry
@@ -204,6 +251,13 @@ public partial class App : Application
                 _config.VectorY = _vectorWindow.Position.Y;
                 _config.VectorW = _vectorWindow.Width;
                 _config.VectorH = _vectorWindow.Height;
+            }
+            if (_logWindow is not null)
+            {
+                _config.LogX = _logWindow.Position.X;
+                _config.LogY = _logWindow.Position.Y;
+                _config.LogW = _logWindow.Width;
+                _config.LogH = _logWindow.Height;
             }
 
             var port = _meter.CurrentPort ?? _setupVm.SelectedPort;

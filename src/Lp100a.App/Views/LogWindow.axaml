@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lp100a.App.ViewModels"
+        xmlns:core="using:Lp100a.Core"
+        x:Class="Lp100a.App.Views.LogWindow"
+        x:DataType="vm:LogViewModel"
+        Width="900" Height="480" MinWidth="520" MinHeight="280"
+        Background="{StaticResource BgBrush}"
+        Icon="/Assets/app-icon.png"
+        Title="LP-100A Transmission Log">
+
+  <DockPanel Margin="12">
+
+    <!-- Action bar -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,10,0,0">
+      <Button Grid.Column="0" Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="90"/>
+      <Button Grid.Column="1" Content="Open in Excel" Command="{Binding OpenInExcelCommand}"
+              Margin="8,0,0,0" MinWidth="120"/>
+      <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{Binding StatusBrush}"
+                 VerticalAlignment="Center" Margin="14,0" TextWrapping="NoWrap"/>
+      <Button Grid.Column="3" Content="Close" Click="OnCloseClick" MinWidth="80"/>
+    </Grid>
+
+    <!-- x:DataType goes on each column Binding, not on the DataGrid: setting it here would also
+         retarget ItemsSource (which must resolve against the view model, not the row type). -->
+    <DataGrid ItemsSource="{Binding Rows}"
+              IsReadOnly="True"
+              CanUserSortColumns="True"
+              CanUserResizeColumns="True"
+              GridLinesVisibility="Horizontal"
+              HeadersVisibility="Column"
+              FontFamily="Consolas"
+              FontSize="12"
+              Background="{StaticResource PanelBrush}"
+              Foreground="{StaticResource TextBrush}">
+
+      <DataGrid.Styles>
+        <!-- Numeric columns read far better right-aligned; the text ones stay left. -->
+        <Style Selector="DataGridCell.num TextBlock">
+          <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+      </DataGrid.Styles>
+
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Time" Width="150"
+                            Binding="{Binding Start, x:DataType=core:TxLogEntry, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"/>
+        <DataGridTextColumn Header="Freq MHz" Width="90" CellStyleClasses="num"
+                            Binding="{Binding FreqMhz, x:DataType=core:TxLogEntry, StringFormat={}{0:F4}}"/>
+        <DataGridTextColumn Header="Dur s" Width="60" CellStyleClasses="num"
+                            Binding="{Binding DurationSeconds, x:DataType=core:TxLogEntry}"/>
+        <DataGridTextColumn Header="Peak W" Width="80" CellStyleClasses="num"
+                            Binding="{Binding PeakForwardW, x:DataType=core:TxLogEntry, StringFormat={}{0:F1}}"/>
+        <DataGridTextColumn Header="Max SWR" Width="80" CellStyleClasses="num"
+                            Binding="{Binding MaxSwr, x:DataType=core:TxLogEntry, StringFormat={}{0:F2}}"/>
+        <DataGridTextColumn Header="SWR@pk" Width="80" CellStyleClasses="num"
+                            Binding="{Binding SwrAtPeak, x:DataType=core:TxLogEntry, StringFormat={}{0:F2}}"/>
+        <DataGridTextColumn Header="RL dB" Width="70" CellStyleClasses="num"
+                            Binding="{Binding MinReturnLossDb, x:DataType=core:TxLogEntry, StringFormat={}{0:F1}}"/>
+        <DataGridTextColumn Header="R + jX Ω" Width="130"
+                            Binding="{Binding RxText, x:DataType=core:TxLogEntry}"/>
+        <DataGridTextColumn Header="Range" Width="65"
+                            Binding="{Binding RangeText, x:DataType=core:TxLogEntry}"/>
+        <DataGridTextColumn Header="TO" Width="45"
+                            Binding="{Binding TimedOutText, x:DataType=core:TxLogEntry}"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+  </DockPanel>
+</Window>

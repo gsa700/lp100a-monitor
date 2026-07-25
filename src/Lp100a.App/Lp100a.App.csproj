@@ -31,6 +31,8 @@
     <PackageReference Include="Avalonia" Version="11.2.1" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.1" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.1" />
+    <!-- DataGrid ships separately from core Avalonia; used by the TX log viewer. -->
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.1" />
     <PackageReference Include="Avalonia.Diagnostics" Version="11.2.1" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>

@@ -16,6 +16,10 @@ public sealed class AppConfig
     public double? VectorY { get; set; }
     public double? VectorW { get; set; }
     public double? VectorH { get; set; }
+    public double? LogX { get; set; }
+    public double? LogY { get; set; }
+    public double? LogW { get; set; }
+    public double? LogH { get; set; }
     public string? Port { get; set; }
     public string? Serial { get; set; }   // FTDI/USB chip serial, so the cable is followed across COM renumbering
     public bool CheckUpdatesAtStartup { get; set; }

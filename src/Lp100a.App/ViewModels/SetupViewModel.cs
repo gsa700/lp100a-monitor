@@ -33,7 +33,7 @@ public sealed class SetupViewModel : ViewModelBase
         RefreshCommand = new RelayCommand(RefreshPorts);
         UpdateCommand = new RelayCommand(() => _ = UpdateButtonAsync(), () => !_updateBusy);
         OpenReleaseCommand = new RelayCommand(OpenRelease);
-        OpenLogCommand = new RelayCommand(OpenLog);
+        ViewLogCommand = new RelayCommand(ViewLog);
         ApplyRigctldCommand = new RelayCommand(ApplyRigctld);
         ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
         CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
@@ -48,7 +48,7 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand RefreshCommand { get; }
     public RelayCommand UpdateCommand { get; }
     public RelayCommand OpenReleaseCommand { get; }
-    public RelayCommand OpenLogCommand { get; }
+    public RelayCommand ViewLogCommand { get; }
     public RelayCommand ApplyRigctldCommand { get; }
     public RelayCommand ResetPeakCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
@@ -121,12 +121,9 @@ public sealed class SetupViewModel : ViewModelBase
         OnFrequencyChanged();
     }
 
-    private void OpenLog()
-    {
-        // Open the CSV in the default handler (Excel) once it exists; otherwise reveal the folder.
-        var target = File.Exists(_logging.LogPath) ? _logging.LogPath : ConfigStore.DataDir;
-        try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); } catch { /* ignore */ }
-    }
+    // Opens the in-app viewer; handing the CSV to a spreadsheet lives in that window, so the
+    // rows are readable without leaving the app (and without Excel holding a lock on the file).
+    private void ViewLog() => (Application.Current as App)?.ShowLog();
 
     // Meter SWR alarm setpoint, shown/settable here so it's reachable even when the main-window
     // METER ALARM row is toggled off.

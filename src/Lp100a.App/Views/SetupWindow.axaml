@@ -104,7 +104,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <CheckBox Grid.Column="0" Content="Log each transmission (CSV)"
                 IsChecked="{Binding LogEachTx}" VerticalAlignment="Center"/>
-      <Button Grid.Column="1" Content="Open log" Command="{Binding OpenLogCommand}"/>
+      <Button Grid.Column="1" Content="View log" Command="{Binding ViewLogCommand}"/>
     </Grid>
     <TextBlock Text="{Binding LogStatusText}" Foreground="{Binding LogStatusBrush}"
                TextWrapping="Wrap" FontSize="12"/>

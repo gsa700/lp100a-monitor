@@ -28,6 +28,8 @@
 
   <Application.Styles>
     <FluentTheme />
+    <!-- DataGrid brings its own theme; without this the TX log viewer renders as a blank area. -->
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
   </Application.Styles>
 
 </Application>

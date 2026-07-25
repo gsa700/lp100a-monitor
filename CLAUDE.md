@@ -32,18 +32,19 @@ dotnet publish src/Lp100a.App -c Release -r win-x64   --self-contained -p:Publis
 ```
 src/
   Lp100a.Core/   # NO UI: SerialReader, StreamFramer, FrameParser, Lp100Reading.
-                 #   Data logging (Phase 1): TxOverTracker, TxOverRecord, TxLogWriter.
+                 #   Data logging (Phase 1): TxOverTracker, TxOverRecord, TxLogWriter,
+                 #     plus the read side: TxLogReader, TxLogEntry.
                  #   CAT frequency (Phase 2): IFrequencySource, RigctldProtocol,
-                 #     RigctldFrequencySource. The interface is the seam for future
-                 #     native Elecraft/Kenwood serial + FlexRadio network sources.
+                 #     RigctldFrequencySource.
                  #   Reusable by a future headless logger — keep it UI-free.
+  Lp100a.App/    # Avalonia MVVM
+                 #   Services/  MeterService (single connection), FrequencyService,
+                 #     TxLoggingService, PortIdentity, UpdateService, AppConfig
+                 #   ViewModels/ MainWindow, Setup, Vector, Log, ViewModelBase
+                 #   Views/     MainWindow, SetupWindow, VectorWindow, LogWindow
+                 #   Controls/  SmithChartControl, PeakBar, SwrBar
 tests/
   Lp100a.Core.Tests/   # xUnit — Core logic only (no UI). Put new nontrivial logic here.
-  Lp100a.App/    # Avalonia MVVM
-                 #   Services/  MeterService (single connection), PortIdentity, UpdateService, AppConfig
-                 #   ViewModels/ MainWindow, Setup, Vector, ViewModelBase
-                 #   Views/     MainWindow, SetupWindow, VectorWindow
-                 #   Controls/  SmithChartControl, PeakBar, SwrBar
 tools/IconGen/   # small icon generator
 ```
 
@@ -68,6 +69,21 @@ manages N meters via a MeterManager).
   live data. Keep the meter on its **Watts/Power screen**.
 - The **User** alarm setpoint value isn't reported over serial, so on-screen alert scaling falls
   back to defaults for User/Off; the meter's own hardware alarm/relay still works.
+
+## CAT frequency: rigctld only — deliberately
+
+The log's `Freq_MHz` comes from **Hamlib rigctld over TCP, and nothing else**. No native
+Elecraft/Kenwood/FlexRadio drivers live here, by decision (2026-07-25): David's **MultiCAT**
+(`~/Documents/Programming/MultiCat`) is the station's CAT hub — it owns each radio and supervises a
+real `rigctld.exe` per radio, re-exposing them as standard rigctld endpoints many clients can share.
+So the monitor stays a dumb rigctld client and every radio-specific concern (K4 network CAT, CI-V,
+Flex, arbitration) is solved once, upstream. `IFrequencySource` remains the seam, but adding sources
+here is the wrong layer — add them to MultiCAT instead.
+
+Attribution rule: log a frequency only when it's known, never a guess — a wrong frequency is worse
+than a blank, because the planned impedance-signature analysis keys its baseline by frequency.
+For dual-coupler/SO2R later: one rigctld endpoint per radio + `\get_ptt` to tell which rig is keyed
+(the LP-100A cannot report which sampler is active — confirmed by N8LP).
 
 ## Config & updater
 
