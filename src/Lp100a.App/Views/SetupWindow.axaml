@@ -12,7 +12,7 @@
   <!-- Tabbed rather than one long scroll: the single stack had grown to seven sections and every
        new option pushed the window taller. Each tab's content sits in a ScrollViewer so a fixed
        window height can never clip a control out of reach. -->
-  <TabControl Margin="8">
+  <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex}">
 
     <!-- ==================== Connection ==================== -->
     <TabItem Header="Connection">

@@ -48,6 +48,7 @@ public partial class App : Application
             {
                 CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup,
                 LogEachTx = _config.LogEachTx,
+                SelectedTabIndex = Math.Clamp(_config.SetupTab, 0, SetupViewModel.TabCount - 1),
             };
             _vectorVm = new VectorViewModel(_meter);
 
@@ -264,6 +265,7 @@ public partial class App : Application
             _config.Port = port;
             if (port is not null && PortIdentity.SerialFor(port) is { } serial) _config.Serial = serial;
             _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
+            _config.SetupTab = _setupVm.SelectedTabIndex;
             _config.LogEachTx = _setupVm.LogEachTx;
             _config.RigctldEnabled = _setupVm.RigctldEnabled;
             _config.RigctldEndpoint = _setupVm.RigctldEndpoint;

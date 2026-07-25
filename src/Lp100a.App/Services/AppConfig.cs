@@ -12,6 +12,7 @@ public sealed class AppConfig
     public double? Height { get; set; }
     public double? SetupX { get; set; }
     public double? SetupY { get; set; }
+    public int SetupTab { get; set; }
     public double? VectorX { get; set; }
     public double? VectorY { get; set; }
     public double? VectorW { get; set; }

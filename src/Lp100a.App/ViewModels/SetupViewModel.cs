@@ -53,6 +53,20 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand ResetPeakCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
 
+    /// <summary>Number of tabs in SetupWindow.axaml. Used to clamp a restored index so a config
+    /// written by a version with more tabs can't select a tab that isn't there (which would leave
+    /// the window showing nothing). Keep in step with the XAML.</summary>
+    public const int TabCount = 5;
+
+    // Bound two-way to the TabControl so the open tab survives closing the window and, via
+    // AppConfig, restarting the app.
+    private int _selectedTabIndex;
+    public int SelectedTabIndex
+    {
+        get => _selectedTabIndex;
+        set => SetProperty(ref _selectedTabIndex, value < 0 ? 0 : value);
+    }
+
     // --- logging ---
     private bool _logEachTx;
     public bool LogEachTx
