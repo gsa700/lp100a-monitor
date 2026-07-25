@@ -20,6 +20,7 @@ public sealed class LogViewModel : ViewModelBase
         _logging = logging;
         RefreshCommand = new RelayCommand(Refresh);
         OpenInExcelCommand = new RelayCommand(OpenInExcel, () => File.Exists(_logging.LogPath));
+        ClearCommand = new RelayCommand(Clear, () => File.Exists(_logging.LogPath));
         // A newly logged over should show up without the user hunting for Refresh.
         _logging.Changed += Refresh;
         Refresh();
@@ -28,6 +29,7 @@ public sealed class LogViewModel : ViewModelBase
     public ObservableCollection<TxLogEntry> Rows { get; } = new();
     public RelayCommand RefreshCommand { get; }
     public RelayCommand OpenInExcelCommand { get; }
+    public RelayCommand ClearCommand { get; }
 
     private string _statusText = "";
     public string StatusText { get => _statusText; private set => SetProperty(ref _statusText, value); }
@@ -60,6 +62,27 @@ public sealed class LogViewModel : ViewModelBase
             StatusBrush = Palette.RedBrush;
         }
         OpenInExcelCommand.RaiseCanExecuteChanged();
+        ClearCommand.RaiseCanExecuteChanged();
+    }
+
+    private void Clear()
+    {
+        try
+        {
+            var archived = _logging.ClearLog();   // renames aside; ClearLog raises Changed -> Refresh
+            if (archived is not null)
+            {
+                // Name the archive explicitly: it's the difference between "my log is gone" and
+                // "my log is over there".
+                StatusText = $"Cleared — previous log saved as {Path.GetFileName(archived)}";
+                StatusBrush = Palette.GreenBrush;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Could not clear the log: {ex.Message}";
+            StatusBrush = Palette.RedBrush;
+        }
     }
 
     private void OpenInExcel()

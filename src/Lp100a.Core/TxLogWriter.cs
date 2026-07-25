@@ -49,13 +49,29 @@ public sealed class TxLogWriter
             File.WriteAllText(_path, TxOverRecord.CsvHeader + Environment.NewLine, Encoding.UTF8);
     }
 
-    private void ArchiveAside()
+    /// <summary>
+    /// Move the current log aside to a timestamped file, leaving no active log (the next
+    /// <see cref="Append"/> starts a fresh one). This is what "clear" means here — the rows are
+    /// renamed out of the way, never deleted, so a mis-click can't destroy a season of data.
+    /// Returns the archive path, or null if there was no log to move.
+    /// </summary>
+    public string? Archive() => File.Exists(_path) ? ArchiveAside() : null;
+
+    private string ArchiveAside()
     {
         var stamp = _clock().ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         var dir = System.IO.Path.GetDirectoryName(_path) ?? string.Empty;
         var name = System.IO.Path.GetFileNameWithoutExtension(_path);
         var ext = System.IO.Path.GetExtension(_path);
-        File.Move(_path, System.IO.Path.Combine(dir, $"{name}_{stamp}{ext}"), overwrite: true);
+
+        // Uniquify: the stamp is per-second, so two archives inside one second would otherwise
+        // overwrite each other — which would quietly lose data the archive exists to preserve.
+        var target = System.IO.Path.Combine(dir, $"{name}_{stamp}{ext}");
+        for (var n = 2; File.Exists(target); n++)
+            target = System.IO.Path.Combine(dir, $"{name}_{stamp}-{n}{ext}");
+
+        File.Move(_path, target);
+        return target;
     }
 
     private void Trim()

@@ -12,13 +12,18 @@
   <DockPanel Margin="12">
 
     <!-- Action bar -->
-    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,10,0,0">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,10,0,0">
       <Button Grid.Column="0" Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="90"/>
       <Button Grid.Column="1" Content="Open in Excel" Command="{Binding OpenInExcelCommand}"
               Margin="8,0,0,0" MinWidth="120"/>
       <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{Binding StatusBrush}"
                  VerticalAlignment="Center" Margin="14,0" TextWrapping="NoWrap"/>
-      <Button Grid.Column="3" Content="Close" Click="OnCloseClick" MinWidth="80"/>
+      <!-- Sits across the status text from Refresh so it isn't a neighbour of the button you click
+           most. It archives rather than deletes, so a mis-click costs nothing but a rename. -->
+      <Button Grid.Column="3" Content="Clear log" Command="{Binding ClearCommand}"
+              Margin="0,0,8,0" MinWidth="90"
+              ToolTip.Tip="Start a fresh log. The current one is renamed aside with a timestamp, not deleted."/>
+      <Button Grid.Column="4" Content="Close" Click="OnCloseClick" MinWidth="80"/>
     </Grid>
 
     <!-- x:DataType goes on each column Binding, not on the DataGrid: setting it here would also

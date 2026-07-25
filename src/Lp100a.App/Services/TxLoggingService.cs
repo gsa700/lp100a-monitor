@@ -44,6 +44,20 @@ public sealed class TxLoggingService : IDisposable
     /// <summary>Fires (UI thread) after an over is logged or a write fails, so a view can refresh.</summary>
     public event Action? Changed;
 
+    /// <summary>
+    /// Archive the current log aside and start a fresh one. Returns the archive path, or null if
+    /// there was nothing to archive. Any in-progress over is left alone — it will simply land in
+    /// the new file when it ends.
+    /// </summary>
+    public string? ClearLog()
+    {
+        var archived = _writer.Archive();
+        LoggedCount = 0;
+        LastError = null;
+        Changed?.Invoke();
+        return archived;
+    }
+
     private void OnReading(Lp100Reading r) => Feed(r, connected: true);
 
     private void OnStateChanged()
