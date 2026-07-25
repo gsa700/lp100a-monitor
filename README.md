@@ -32,7 +32,7 @@ no need to download manually again.
 
 ## Windows
 
-- **Main window** — power/SWR hero readouts, forward-power (with a peak-hold marker)
+- **Main window** — power/SWR readouts, forward-power (with a peak-hold marker)
   and SWR bars, and toggleable rows (reflected power, return loss, dBm, peak, |Z|,
   phase, R + jX). Two of the rows are **clickable controls** for the meter:
   - **METER MODE** — shows the meter's Avg/Peak/Tune power mode; click to cycle it.
