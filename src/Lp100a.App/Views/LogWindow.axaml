@@ -13,6 +13,14 @@
 
     <!-- Action bar -->
     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,10,0,0">
+      <Grid.Styles>
+        <!-- These buttons carry a MinWidth, so their content presenter is wider than the label;
+             without this the text sits left inside the button instead of centred. -->
+        <Style Selector="Button">
+          <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+
       <Button Grid.Column="0" Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="90"/>
       <!-- Not "Open in Excel": plenty of stations have no Excel. This hands the .csv to whatever
            the OS has registered — LibreOffice, Numbers, a text editor. -->
