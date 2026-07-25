@@ -5,6 +5,22 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.11-beta] - 2026-07-25
+
+### Added
+- **In-app transmission log viewer** — **Setup → Logging → View log** opens the logged overs in a
+  sortable table (time, frequency, duration, peak power, worst SWR, SWR and R+jX at peak, range),
+  so you no longer need a spreadsheet to read the log. Click any column to sort; **Open in Excel**
+  is still there for deeper work. Rows are chronological with the newest at the bottom, and the
+  view scrolls to the newest automatically — including live, as each new over is logged.
+
+### Changed
+- **Setup is now tabbed** — Connection, Display, Alarm, Logging, Updates. The single scrolling
+  page had grown to seven sections and got taller with every option. Connection holds both data
+  sources (the meter's serial port and the rigctld CAT link), so it's one place to look when
+  something isn't talking. The window reopens on whichever tab you used last.
+- Tab headers are drawn as actual tabs rather than the theme's default underlined text labels.
+
 ## [0.9.10-beta] - 2026-07-25
 
 ### Fixed
