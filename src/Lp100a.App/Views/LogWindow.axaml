@@ -14,8 +14,11 @@
     <!-- Action bar -->
     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,10,0,0">
       <Button Grid.Column="0" Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="90"/>
-      <Button Grid.Column="1" Content="Open in Excel" Command="{Binding OpenInExcelCommand}"
-              Margin="8,0,0,0" MinWidth="120"/>
+      <!-- Not "Open in Excel": plenty of stations have no Excel. This hands the .csv to whatever
+           the OS has registered — LibreOffice, Numbers, a text editor. -->
+      <Button Grid.Column="1" Content="Open CSV" Command="{Binding OpenCsvCommand}"
+              Margin="8,0,0,0" MinWidth="120"
+              ToolTip.Tip="Open the log file in your default spreadsheet or text app."/>
       <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{Binding StatusBrush}"
                  VerticalAlignment="Center" Margin="14,0" TextWrapping="NoWrap"/>
       <!-- Sits across the status text from Refresh so it isn't a neighbour of the button you click

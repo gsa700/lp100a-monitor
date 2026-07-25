@@ -20,12 +20,23 @@
         <StackPanel Margin="8" Spacing="10">
 
           <TextBlock Text="METER" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <ComboBox ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}"
-                      MinWidth="150" PlaceholderText="Port"/>
-            <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
-            <Button Content="{Binding ConnectLabel}" Command="{Binding ConnectCommand}"/>
-          </StackPanel>
+          <!-- Grid, not a horizontal stack: the port entry now carries the adapter serial, so it
+               needs to take the leftover width rather than a fixed MinWidth. -->
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <ComboBox Grid.Column="0" ItemsSource="{Binding Ports}"
+                      SelectedItem="{Binding SelectedPortOption}"
+                      HorizontalAlignment="Stretch" PlaceholderText="Port">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PortOption">
+                  <TextBlock Text="{Binding Display}" FontFamily="Consolas"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshCommand}" Margin="8,0,0,0"/>
+            <Button Grid.Column="2" Content="{Binding ConnectLabel}" Command="{Binding ConnectCommand}" Margin="8,0,0,0"/>
+          </Grid>
+          <TextBlock Text="The name in brackets is the USB adapter's own serial. The app follows it, so the meter keeps working when Windows renumbers the COM port."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
           <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" TextWrapping="Wrap"/>
           <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
                      Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>

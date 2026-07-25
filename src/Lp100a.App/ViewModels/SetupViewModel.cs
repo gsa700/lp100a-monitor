@@ -43,7 +43,7 @@ public sealed class SetupViewModel : ViewModelBase
     }
 
     public DisplaySettings Display { get; }
-    public ObservableCollection<string> Ports { get; } = new();
+    public ObservableCollection<PortOption> Ports { get; } = new();
     public RelayCommand ConnectCommand { get; }
     public RelayCommand RefreshCommand { get; }
     public RelayCommand UpdateCommand { get; }
@@ -144,12 +144,20 @@ public sealed class SetupViewModel : ViewModelBase
     private string _alarmSetpointText = "—";
     public string AlarmSetpointText { get => _alarmSetpointText; private set => SetProperty(ref _alarmSetpointText, value); }
 
-    private string? _selectedPort;
-    public string? SelectedPort
+    private PortOption? _selectedPortOption;
+    public PortOption? SelectedPortOption
     {
-        get => _selectedPort;
-        set { if (SetProperty(ref _selectedPort, value)) ConnectCommand.RaiseCanExecuteChanged(); }
+        get => _selectedPortOption;
+        set
+        {
+            if (!SetProperty(ref _selectedPortOption, value)) return;
+            OnPropertyChanged(nameof(SelectedPort));
+            ConnectCommand.RaiseCanExecuteChanged();
+        }
     }
+
+    /// <summary>Bare COM/tty name of the selected port — what the meter and config actually use.</summary>
+    public string? SelectedPort => _selectedPortOption?.Port;
 
     public bool IsConnected => _meter.IsConnected;
     public string ConnectLabel => IsConnected ? "Disconnect" : "Connect";
@@ -163,8 +171,12 @@ public sealed class SetupViewModel : ViewModelBase
     /// <summary>Pre-select a saved port (called at startup by App).</summary>
     public void SelectPort(string? port)
     {
-        if (port is not null && Ports.Contains(port)) SelectedPort = port;
+        if (port is null) return;
+        if (Find(port) is { } match) SelectedPortOption = match;
     }
+
+    private PortOption? Find(string port) =>
+        Ports.FirstOrDefault(p => string.Equals(p.Port, port, StringComparison.OrdinalIgnoreCase));
 
     private void ToggleConnect()
     {
@@ -176,9 +188,11 @@ public sealed class SetupViewModel : ViewModelBase
     {
         var current = SelectedPort;
         Ports.Clear();
+        // One WMI sweep for the whole list, not one per port.
+        var serials = PortIdentity.GetMap();
         foreach (var p in MeterService.GetPortNames().OrderBy(x => x))
-            Ports.Add(p);
-        SelectedPort = current is not null && Ports.Contains(current) ? current : Ports.FirstOrDefault();
+            Ports.Add(new PortOption(p, serials.GetValueOrDefault(p)));
+        SelectedPortOption = (current is not null ? Find(current) : null) ?? Ports.FirstOrDefault();
     }
 
     private void OnReading(Lp100Reading r) => AlarmSetpointText = r.AlarmSetpointText;

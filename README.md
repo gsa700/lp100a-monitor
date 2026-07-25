@@ -74,8 +74,9 @@ numbers actually mean something.
 An over is closed only on a *confirmed* key-up, so a serial dropout mid-transmission
 can't split one over into two or cut it short. The log is capped to a rolling 2000 rows
 at `%AppData%\Lp100aMonitor\TXlog.csv` (Windows) or `~/.config/Lp100aMonitor/TXlog.csv`
-(Linux). **View log** shows it in-app, sorted however you like; **Open in Excel** hands
-the CSV to your spreadsheet.
+(Linux). **View log** shows it in-app, sorted however you like; **Open CSV** hands the
+file to whatever your system opens `.csv` with, and **Clear log** starts a fresh one —
+renaming the old to `TXlog_<timestamp>.csv` rather than deleting it.
 
 <p align="center">
   <img src="docs/screenshot-log.png" width="900"

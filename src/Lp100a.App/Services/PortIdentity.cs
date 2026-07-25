@@ -1,6 +1,7 @@
 using System.Management;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
+using Lp100a.Core;
 
 namespace Lp100a.App.Services;
 
@@ -12,10 +13,6 @@ namespace Lp100a.App.Services;
 /// </summary>
 public static class PortIdentity
 {
-    private static readonly Regex Ftdi =
-        new(@"FTDIBUS\\VID_[0-9A-Fa-f]{4}\+PID_[0-9A-Fa-f]{4}\+([^\\]+)\\", RegexOptions.Compiled);
-    private static readonly Regex Usb =
-        new(@"USB\\VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}\\([^\\]+)$", RegexOptions.Compiled);
     private static readonly Regex ComName = new(@"\((COM\d+)\)", RegexOptions.Compiled);
 
     /// <summary>COM name -> adapter serial for every port that reports a stable serial.</summary>
@@ -37,18 +34,9 @@ public static class PortIdentity
             if (o["Name"] is not string name || o["PNPDeviceID"] is not string pnp) continue;
             var cm = ComName.Match(name);
             if (!cm.Success) continue;
-            var serial = ExtractSerial(pnp);
+            var serial = UsbSerial.Extract(pnp);
             if (serial is not null) map[cm.Groups[1].Value] = serial;
         }
-    }
-
-    private static string? ExtractSerial(string pnp)
-    {
-        var f = Ftdi.Match(pnp);
-        if (f.Success) return f.Groups[1].Value;
-        var u = Usb.Match(pnp);
-        if (u.Success && !u.Groups[1].Value.Contains('&')) return u.Groups[1].Value;  // '&' = location id, not a real serial
-        return null;
     }
 
     /// <summary>Serial of the adapter currently on <paramref name="port"/>, or null.</summary>

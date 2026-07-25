@@ -19,7 +19,7 @@ public sealed class LogViewModel : ViewModelBase
     {
         _logging = logging;
         RefreshCommand = new RelayCommand(Refresh);
-        OpenInExcelCommand = new RelayCommand(OpenInExcel, () => File.Exists(_logging.LogPath));
+        OpenCsvCommand = new RelayCommand(OpenCsv, () => File.Exists(_logging.LogPath));
         ClearCommand = new RelayCommand(Clear, () => File.Exists(_logging.LogPath));
         // A newly logged over should show up without the user hunting for Refresh.
         _logging.Changed += Refresh;
@@ -28,7 +28,7 @@ public sealed class LogViewModel : ViewModelBase
 
     public ObservableCollection<TxLogEntry> Rows { get; } = new();
     public RelayCommand RefreshCommand { get; }
-    public RelayCommand OpenInExcelCommand { get; }
+    public RelayCommand OpenCsvCommand { get; }
     public RelayCommand ClearCommand { get; }
 
     private string _statusText = "";
@@ -61,7 +61,7 @@ public sealed class LogViewModel : ViewModelBase
             StatusText = $"Could not read the log: {ex.Message}";
             StatusBrush = Palette.RedBrush;
         }
-        OpenInExcelCommand.RaiseCanExecuteChanged();
+        OpenCsvCommand.RaiseCanExecuteChanged();
         ClearCommand.RaiseCanExecuteChanged();
     }
 
@@ -85,7 +85,7 @@ public sealed class LogViewModel : ViewModelBase
         }
     }
 
-    private void OpenInExcel()
+    private void OpenCsv()
     {
         try { Process.Start(new ProcessStartInfo(_logging.LogPath) { UseShellExecute = true }); }
         catch { /* no handler registered for .csv */ }
