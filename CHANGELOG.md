@@ -5,6 +5,20 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.12-beta] - 2026-07-25
+
+### Fixed
+- **App crash when refreshing the transmission log.** With the log window open, clicking
+  **Refresh** — or simply logging a new over, which refreshes it automatically — took the whole
+  app down. The window's reference to its own grid was never wired up, so the auto-scroll-to-newest
+  hit a null reference. Anyone who left the log window open while operating would have hit this on
+  their first transmission. **Everyone on 0.9.11-beta should update.**
+- The log's column headers were clipped to their own captions ("Freq MH", "SWR@pl", "Ran") and
+  timestamps were cut off; columns are now sized to fit their headers, and the window opens wider.
+- The log now scrolls to the newest row when it first opens, not only on later refreshes.
+- Setup's tabs reported themselves to screen readers as "Avalonia.Controls.ScrollViewer" instead
+  of their names; they now announce as Connection / Display / Alarm / Logging / Updates.
+
 ## [0.9.11-beta] - 2026-07-25
 
 ### Added

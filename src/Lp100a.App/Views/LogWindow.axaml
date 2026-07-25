@@ -4,7 +4,7 @@
         xmlns:core="using:Lp100a.Core"
         x:Class="Lp100a.App.Views.LogWindow"
         x:DataType="vm:LogViewModel"
-        Width="900" Height="480" MinWidth="520" MinHeight="280"
+        Width="1080" Height="520" MinWidth="520" MinHeight="280"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
         Title="LP-100A Transmission Log">
@@ -43,25 +43,28 @@
       </DataGrid.Styles>
 
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Time" Width="150"
+        <!-- Widths are sized to the HEADER text, not just the values: at Consolas 12 the earlier
+             narrower columns clipped their own captions ("Freq MH", "SWR@pl", "Ran"). Fixed rather
+             than Auto so columns don't re-jitter as virtualized rows scroll into view. -->
+        <DataGridTextColumn Header="Time" Width="180"
                             Binding="{Binding Start, x:DataType=core:TxLogEntry, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}"/>
-        <DataGridTextColumn Header="Freq MHz" Width="90" CellStyleClasses="num"
+        <DataGridTextColumn Header="Freq MHz" Width="100" CellStyleClasses="num"
                             Binding="{Binding FreqMhz, x:DataType=core:TxLogEntry, StringFormat={}{0:F4}}"/>
-        <DataGridTextColumn Header="Dur s" Width="60" CellStyleClasses="num"
+        <DataGridTextColumn Header="Dur s" Width="72" CellStyleClasses="num"
                             Binding="{Binding DurationSeconds, x:DataType=core:TxLogEntry}"/>
-        <DataGridTextColumn Header="Peak W" Width="80" CellStyleClasses="num"
+        <DataGridTextColumn Header="Peak W" Width="92" CellStyleClasses="num"
                             Binding="{Binding PeakForwardW, x:DataType=core:TxLogEntry, StringFormat={}{0:F1}}"/>
-        <DataGridTextColumn Header="Max SWR" Width="80" CellStyleClasses="num"
+        <DataGridTextColumn Header="Max SWR" Width="98" CellStyleClasses="num"
                             Binding="{Binding MaxSwr, x:DataType=core:TxLogEntry, StringFormat={}{0:F2}}"/>
-        <DataGridTextColumn Header="SWR@pk" Width="80" CellStyleClasses="num"
+        <DataGridTextColumn Header="SWR @ pk" Width="105" CellStyleClasses="num"
                             Binding="{Binding SwrAtPeak, x:DataType=core:TxLogEntry, StringFormat={}{0:F2}}"/>
-        <DataGridTextColumn Header="RL dB" Width="70" CellStyleClasses="num"
+        <DataGridTextColumn Header="RL dB" Width="80" CellStyleClasses="num"
                             Binding="{Binding MinReturnLossDb, x:DataType=core:TxLogEntry, StringFormat={}{0:F1}}"/>
-        <DataGridTextColumn Header="R + jX Ω" Width="130"
+        <DataGridTextColumn Header="R + jX Ω" Width="140"
                             Binding="{Binding RxText, x:DataType=core:TxLogEntry}"/>
-        <DataGridTextColumn Header="Range" Width="65"
+        <DataGridTextColumn Header="Range" Width="80"
                             Binding="{Binding RangeText, x:DataType=core:TxLogEntry}"/>
-        <DataGridTextColumn Header="TO" Width="45"
+        <DataGridTextColumn Header="Timed out" Width="105"
                             Binding="{Binding TimedOutText, x:DataType=core:TxLogEntry}"/>
       </DataGrid.Columns>
     </DataGrid>

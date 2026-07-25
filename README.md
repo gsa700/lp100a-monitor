@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.9.3-beta** — real and in use, but not yet broadly field-tested.
+> Status: **0.9.12-beta** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -41,8 +41,11 @@ no need to download manually again.
 - **Vector window** — the Smith chart: constant-R/X grid with ohm labels, a live
   operating-point marker with a fading trail, and a constant-SWR circle. Great for
   antenna/tuner tuning.
-- **Setup window** — port selection, display toggles, an on-screen SWR alarm banner
-  toggle, peak-hold on/off, and in-app updates.
+- **Setup window** — tabbed: **Connection** (meter serial port and the rigctld CAT link),
+  **Display**, **Alarm**, **Logging**, and **Updates**. It reopens on whichever tab you
+  used last.
+- **Transmission log window** — an opt-in CSV log with one row per over, viewable in the
+  app (**Setup → Logging → View log**) and sortable by any column.
 
 The **SWR bar** fills with a green → orange → red gradient whose colour breakpoints
 scale to the meter's alarm setpoint — red anchors where your alarm trips. When the
@@ -60,6 +63,30 @@ everything. Window positions and display choices persist between runs.
 |                      Idle                      |                 Transmitting (dummy load)                  |
 | :--------------------------------------------: | :--------------------------------------------------------: |
 | ![Main window, idle](docs/screenshot-main.png) | ![Main window, transmitting](docs/screenshot-main-tx.png) |
+
+## Transmission logging
+
+Turn on **Setup → Logging → Log each transmission (CSV)** and every over is recorded as
+one row: timestamp, frequency, duration, peak forward power, worst SWR, and the SWR plus
+load **R + jX** sampled at the moment of peak power — the point in the over where the
+numbers actually mean something.
+
+An over is closed only on a *confirmed* key-up, so a serial dropout mid-transmission
+can't split one over into two or cut it short. The log is capped to a rolling 2000 rows
+at `%AppData%\Lp100aMonitor\TXlog.csv` (Windows) or `~/.config/Lp100aMonitor/TXlog.csv`
+(Linux). **View log** shows it in-app, sorted however you like; **Open in Excel** hands
+the CSV to your spreadsheet.
+
+<p align="center">
+  <img src="docs/screenshot-log.png" width="900"
+       alt="The transmission log window: one row per over with frequency, power, SWR and R + jX">
+</p>
+
+The **Freq MHz** column fills in when a frequency source is configured under
+**Setup → Connection** — a Hamlib `rigctld` endpoint (`host:port`, default
+`127.0.0.1:4532`). rigctld shares one CAT port across applications, so this won't fight
+your logger for the radio. When no frequency is known the column is deliberately left
+**blank** rather than carrying a guess.
 
 ## Serial protocol (per the official LP-100A manual, p.20)
 

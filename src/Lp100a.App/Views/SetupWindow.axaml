@@ -15,7 +15,7 @@
   <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex}">
 
     <!-- ==================== Connection ==================== -->
-    <TabItem Header="Connection">
+    <TabItem Header="Connection" AutomationProperties.Name="Connection">
       <ScrollViewer>
         <StackPanel Margin="8" Spacing="10">
 
@@ -52,7 +52,7 @@
     </TabItem>
 
     <!-- ==================== Display ==================== -->
-    <TabItem Header="Display">
+    <TabItem Header="Display" AutomationProperties.Name="Display">
       <ScrollViewer>
         <StackPanel Margin="8" Spacing="10">
 
@@ -98,7 +98,7 @@
     </TabItem>
 
     <!-- ==================== Alarm ==================== -->
-    <TabItem Header="Alarm">
+    <TabItem Header="Alarm" AutomationProperties.Name="Alarm">
       <ScrollViewer>
         <StackPanel Margin="8" Spacing="10">
 
@@ -119,7 +119,7 @@
     </TabItem>
 
     <!-- ==================== Logging ==================== -->
-    <TabItem Header="Logging">
+    <TabItem Header="Logging" AutomationProperties.Name="Logging">
       <ScrollViewer>
         <StackPanel Margin="8" Spacing="10">
 
@@ -139,7 +139,7 @@
     </TabItem>
 
     <!-- ==================== Updates ==================== -->
-    <TabItem Header="Updates">
+    <TabItem Header="Updates" AutomationProperties.Name="Updates">
       <ScrollViewer>
         <StackPanel Margin="8" Spacing="10">
 
