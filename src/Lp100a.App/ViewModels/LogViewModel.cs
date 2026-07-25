@@ -41,14 +41,15 @@ public sealed class LogViewModel : ViewModelBase
         {
             var rows = TxLogReader.Read(_logging.LogPath);
             Rows.Clear();
-            // Newest first: the last thing you transmitted is the thing you want to see.
-            for (var i = rows.Count - 1; i >= 0; i--) Rows.Add(rows[i]);
+            // Chronological, like the CSV itself and like a paper log: newest at the BOTTOM. The
+            // window scrolls to the last row so the most recent over is still what you land on.
+            foreach (var row in rows) Rows.Add(row);
 
             StatusText = rows.Count == 0
                 ? File.Exists(_logging.LogPath)
                     ? "No transmissions logged yet."
                     : "No log file yet — enable logging in Setup, then transmit."
-                : $"{rows.Count} transmission(s), newest first.";
+                : $"{rows.Count} transmission(s), oldest first.";
             StatusBrush = Palette.DimBrush;
         }
         catch (Exception ex)

@@ -3,124 +3,157 @@
         xmlns:vm="using:Lp100a.App.ViewModels"
         x:Class="Lp100a.App.Views.SetupWindow"
         x:DataType="vm:SetupViewModel"
-        Width="400" SizeToContent="Height"
+        Width="450" Height="470"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
         Title="LP-100A Setup">
 
-  <StackPanel Margin="16" Spacing="10">
+  <!-- Tabbed rather than one long scroll: the single stack had grown to seven sections and every
+       new option pushed the window taller. Each tab's content sits in a ScrollViewer so a fixed
+       window height can never clip a control out of reach. -->
+  <TabControl Margin="8">
 
-    <!-- Connection -->
-    <TextBlock Text="CONNECTION" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <ComboBox ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}"
-                MinWidth="150" PlaceholderText="Port"/>
-      <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
-      <Button Content="{Binding ConnectLabel}" Command="{Binding ConnectCommand}"/>
-    </StackPanel>
-    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" TextWrapping="Wrap"/>
+    <!-- ==================== Connection ==================== -->
+    <TabItem Header="Connection">
+      <ScrollViewer>
+        <StackPanel Margin="8" Spacing="10">
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <TextBlock Text="METER" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}"
+                      MinWidth="150" PlaceholderText="Port"/>
+            <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+            <Button Content="{Binding ConnectLabel}" Command="{Binding ConnectCommand}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" TextWrapping="Wrap"/>
+          <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
-    <!-- Display -->
-    <TextBlock Text="DISPLAY" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <TextBlock Text="Keep the LP-100A on its Watts screen for live power/vector data."
-               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
-    <UniformGrid Columns="2">
-      <CheckBox Content="Forward power bar" IsChecked="{Binding Display.ShowPowerBar}" Margin="0,3"/>
-      <CheckBox Content="SWR bar"          IsChecked="{Binding Display.ShowSwrBar}" Margin="0,3"/>
-      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,3">
-        <CheckBox Content="Peak forward" IsChecked="{Binding Display.ShowPeak}"/>
-        <Button Content="(reset)" Command="{Binding ResetPeakCommand}"
-                Background="Transparent" BorderThickness="0" Padding="0"
-                Foreground="{StaticResource BlueBrush}" Cursor="Hand" VerticalAlignment="Center"/>
-      </StackPanel>
-      <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}" Margin="0,3"/>
-      <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}" Margin="0,3"/>
-      <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}" Margin="0,3"/>
-      <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}" Margin="0,3"/>
-      <CheckBox Content="Meter mode"       IsChecked="{Binding Display.ShowMeterMode}" Margin="0,3"/>
-      <CheckBox Content="Meter alarm"      IsChecked="{Binding Display.ShowMeterAlarm}" Margin="0,3"/>
-      <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}" Margin="0,3"/>
-      <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}" Margin="0,3"/>
-      <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}" Margin="0,3"/>
-    </UniformGrid>
+          <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <TextBlock Text="RADIO FREQUENCY (CAT)" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <CheckBox Content="Read frequency from Hamlib rigctld" IsChecked="{Binding RigctldEnabled}"/>
+          <Grid ColumnDefinitions="*,Auto,Auto" IsEnabled="{Binding RigctldEnabled}">
+            <TextBox Grid.Column="0" Text="{Binding RigctldEndpoint}" Watermark="127.0.0.1:4532"
+                     VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Content="Apply" Command="{Binding ApplyRigctldCommand}" Margin="6,0,0,0"/>
+            <TextBlock Grid.Column="2" Text="{Binding FreqText}" FontFamily="Consolas" FontWeight="Bold"
+                       Foreground="{StaticResource BlueBrush}" VerticalAlignment="Center"
+                       MinWidth="110" Margin="8,0,0,0" HorizontalAlignment="Right"/>
+          </Grid>
+          <TextBlock Text="{Binding FreqStatusText}" Foreground="{Binding FreqStatusBrush}"
+                     TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="rigctld shares one CAT port across apps, so this won't fight your logger. Run e.g. rigctld -m 2028 -r COM5, or -m 1 for a dummy rig to test with."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
-    <StackPanel Spacing="4">
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <CheckBox Content="Peak hold" IsChecked="{Binding Display.PeakHoldEnabled}" VerticalAlignment="Center"/>
-        <TextBlock Text="decay" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
-        <NumericUpDown Value="{Binding Display.PeakHoldSeconds}" Minimum="0.25" Maximum="5.0"
-                       Increment="0.25" FormatString="0.00" Width="124" VerticalAlignment="Center"
-                       IsEnabled="{Binding Display.PeakHoldEnabled}"/>
-        <TextBlock Text="s" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
-      </StackPanel>
-      <UniformGrid Columns="2">
-        <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}" Margin="0,3"/>
-        <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}" Margin="0,3"/>
-      </UniformGrid>
-    </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+    <!-- ==================== Display ==================== -->
+    <TabItem Header="Display">
+      <ScrollViewer>
+        <StackPanel Margin="8" Spacing="10">
 
-    <!-- SWR alarm -->
-    <TextBlock Text="SWR ALARM" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <TextBlock Text="Meter setpoint" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
-      <Button Content="{Binding AlarmSetpointText}" Command="{Binding CycleAlarmCommand}"
-              FontFamily="Consolas" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
-              Background="Transparent" BorderThickness="0" Padding="14,2" Cursor="Hand"
-              VerticalAlignment="Center" MinWidth="60"/>
-    </StackPanel>
-    <CheckBox Content="Show on-screen SWR alarm" IsChecked="{Binding Display.SwrBannerEnabled}"/>
-    <TextBlock Text="Cycling the setpoint drives the meter's own alarm and relay. The on-screen banner echoes it. Note: the meter doesn't report a value for its User setpoint, so the banner can't show for User or Off — the meter's alarm still works."
-               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="ROWS" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <UniformGrid Columns="2">
+            <CheckBox Content="Forward power bar" IsChecked="{Binding Display.ShowPowerBar}" Margin="0,3"/>
+            <CheckBox Content="SWR bar"          IsChecked="{Binding Display.ShowSwrBar}" Margin="0,3"/>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,3">
+              <CheckBox Content="Peak forward" IsChecked="{Binding Display.ShowPeak}"/>
+              <Button Content="(reset)" Command="{Binding ResetPeakCommand}"
+                      Background="Transparent" BorderThickness="0" Padding="0"
+                      Foreground="{StaticResource BlueBrush}" Cursor="Hand" VerticalAlignment="Center"/>
+            </StackPanel>
+            <CheckBox Content="dBm"              IsChecked="{Binding Display.ShowDbm}" Margin="0,3"/>
+            <CheckBox Content="Reflected power"  IsChecked="{Binding Display.ShowReflected}" Margin="0,3"/>
+            <CheckBox Content="Return loss"      IsChecked="{Binding Display.ShowReturnLoss}" Margin="0,3"/>
+            <CheckBox Content="TX timer"         IsChecked="{Binding Display.ShowTx}" Margin="0,3"/>
+            <CheckBox Content="Meter mode"       IsChecked="{Binding Display.ShowMeterMode}" Margin="0,3"/>
+            <CheckBox Content="Meter alarm"      IsChecked="{Binding Display.ShowMeterAlarm}" Margin="0,3"/>
+            <CheckBox Content="|Z| magnitude"    IsChecked="{Binding Display.ShowZ}" Margin="0,3"/>
+            <CheckBox Content="Phase"            IsChecked="{Binding Display.ShowPhase}" Margin="0,3"/>
+            <CheckBox Content="R + jX"           IsChecked="{Binding Display.ShowRx}" Margin="0,3"/>
+          </UniformGrid>
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <Border Height="1" Background="{StaticResource PanelBrush}"/>
 
-    <!-- Frequency (CAT) -->
-    <TextBlock Text="FREQUENCY (CAT)" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <CheckBox Content="Read frequency from Hamlib rigctld" IsChecked="{Binding RigctldEnabled}"/>
-    <Grid ColumnDefinitions="*,Auto,Auto" IsEnabled="{Binding RigctldEnabled}">
-      <TextBox Grid.Column="0" Text="{Binding RigctldEndpoint}" Watermark="127.0.0.1:4532"
-               VerticalAlignment="Center"/>
-      <Button Grid.Column="1" Content="Apply" Command="{Binding ApplyRigctldCommand}" Margin="6,0,0,0"/>
-      <TextBlock Grid.Column="2" Text="{Binding FreqText}" FontFamily="Consolas" FontWeight="Bold"
-                 Foreground="{StaticResource BlueBrush}" VerticalAlignment="Center"
-                 MinWidth="110" Margin="8,0,0,0" HorizontalAlignment="Right"/>
-    </Grid>
-    <TextBlock Text="{Binding FreqStatusText}" Foreground="{Binding FreqStatusBrush}"
-               TextWrapping="Wrap" FontSize="12"/>
-    <TextBlock Text="rigctld shares one CAT port across apps, so this won't fight your logger. Run e.g. rigctld -m 2028 -r COM5, or -m 1 for a dummy rig to test with."
-               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="BEHAVIOUR" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <CheckBox Content="Peak hold" IsChecked="{Binding Display.PeakHoldEnabled}" VerticalAlignment="Center"/>
+            <TextBlock Text="decay" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+            <NumericUpDown Value="{Binding Display.PeakHoldSeconds}" Minimum="0.25" Maximum="5.0"
+                           Increment="0.25" FormatString="0.00" Width="124" VerticalAlignment="Center"
+                           IsEnabled="{Binding Display.PeakHoldEnabled}"/>
+            <TextBlock Text="s" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+          </StackPanel>
+          <UniformGrid Columns="2">
+            <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}" Margin="0,3"/>
+            <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}" Margin="0,3"/>
+          </UniformGrid>
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
 
-    <!-- Logging -->
-    <TextBlock Text="LOGGING" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <Grid ColumnDefinitions="*,Auto">
-      <CheckBox Grid.Column="0" Content="Log each transmission (CSV)"
-                IsChecked="{Binding LogEachTx}" VerticalAlignment="Center"/>
-      <Button Grid.Column="1" Content="View log" Command="{Binding ViewLogCommand}"/>
-    </Grid>
-    <TextBlock Text="{Binding LogStatusText}" Foreground="{Binding LogStatusBrush}"
-               TextWrapping="Wrap" FontSize="12"/>
-    <TextBlock Text="One row per over: time, duration, peak power, worst SWR, and SWR + R+jX sampled at peak power. Frequency fills in once a radio (CAT) is linked."
-               Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+    <!-- ==================== Alarm ==================== -->
+    <TabItem Header="Alarm">
+      <ScrollViewer>
+        <StackPanel Margin="8" Spacing="10">
 
-    <Border Height="1" Background="{StaticResource PanelBrush}"/>
+          <TextBlock Text="SWR ALARM" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Meter setpoint" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+            <Button Content="{Binding AlarmSetpointText}" Command="{Binding CycleAlarmCommand}"
+                    FontFamily="Consolas" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"
+                    Background="Transparent" BorderThickness="0" Padding="14,2" Cursor="Hand"
+                    VerticalAlignment="Center" MinWidth="60"/>
+          </StackPanel>
+          <CheckBox Content="Show on-screen SWR alarm" IsChecked="{Binding Display.SwrBannerEnabled}"/>
+          <TextBlock Text="Cycling the setpoint drives the meter's own alarm and relay. The on-screen banner echoes it. Note: the meter doesn't report a value for its User setpoint, so the banner can't show for User or Off — the meter's alarm still works."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
-    <!-- Updates -->
-    <TextBlock Text="UPDATES" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-    <TextBlock Text="{Binding UpdateStatus}" Foreground="{Binding UpdateStatusBrush}" TextWrapping="Wrap"/>
-    <Grid ColumnDefinitions="Auto,Auto,*">
-      <Button Grid.Column="0" Content="{Binding UpdateButtonLabel}" Command="{Binding UpdateCommand}" MinWidth="140"/>
-      <Button Grid.Column="1" Content="Release page" Command="{Binding OpenReleaseCommand}" Margin="6,0,0,0"/>
-    </Grid>
-    <CheckBox Content="Check for updates at startup" IsChecked="{Binding CheckUpdatesAtStartup}"/>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
 
-  </StackPanel>
+    <!-- ==================== Logging ==================== -->
+    <TabItem Header="Logging">
+      <ScrollViewer>
+        <StackPanel Margin="8" Spacing="10">
+
+          <TextBlock Text="TRANSMISSION LOG" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <Grid ColumnDefinitions="*,Auto">
+            <CheckBox Grid.Column="0" Content="Log each transmission (CSV)"
+                      IsChecked="{Binding LogEachTx}" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Content="View log" Command="{Binding ViewLogCommand}"/>
+          </Grid>
+          <TextBlock Text="{Binding LogStatusText}" Foreground="{Binding LogStatusBrush}"
+                     TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="One row per over: time, duration, peak power, worst SWR, and SWR + R+jX sampled at peak power. Frequency fills in once a radio (CAT) is linked."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+    <!-- ==================== Updates ==================== -->
+    <TabItem Header="Updates">
+      <ScrollViewer>
+        <StackPanel Margin="8" Spacing="10">
+
+          <TextBlock Text="UPDATES" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <TextBlock Text="{Binding UpdateStatus}" Foreground="{Binding UpdateStatusBrush}" TextWrapping="Wrap"/>
+          <Grid ColumnDefinitions="Auto,Auto,*">
+            <Button Grid.Column="0" Content="{Binding UpdateButtonLabel}" Command="{Binding UpdateCommand}" MinWidth="140"/>
+            <Button Grid.Column="1" Content="Release page" Command="{Binding OpenReleaseCommand}" Margin="6,0,0,0"/>
+          </Grid>
+          <CheckBox Content="Check for updates at startup" IsChecked="{Binding CheckUpdatesAtStartup}"/>
+
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+
+  </TabControl>
 </Window>

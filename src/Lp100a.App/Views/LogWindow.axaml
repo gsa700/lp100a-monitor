@@ -23,7 +23,8 @@
 
     <!-- x:DataType goes on each column Binding, not on the DataGrid: setting it here would also
          retarget ItemsSource (which must resolve against the view model, not the row type). -->
-    <DataGrid ItemsSource="{Binding Rows}"
+    <DataGrid x:Name="Grid"
+              ItemsSource="{Binding Rows}"
               IsReadOnly="True"
               CanUserSortColumns="True"
               CanUserResizeColumns="True"
