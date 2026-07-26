@@ -5,6 +5,28 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.13-beta] - 2026-07-25
+
+### Added
+- **Clear log** in the log window — starts a fresh log for a clean run of data. The current log is
+  **renamed aside** to `TXlog_<timestamp>.csv`, never deleted, and the status line names the file it
+  went to. Two clears in the same second no longer overwrite the first archive.
+- **The port list now shows each USB adapter's serial** — `COM7  (A10KMB4VA)`. With a meter, a
+  second meter and a transmitter all on similar adapters, the COM number alone doesn't say which is
+  which; the serial shown is the one the connection is pinned to when Windows renumbers the port.
+
+### Fixed
+- **An adapter with no serial burned in was pinned to the USB socket instead of the cable.** Windows
+  synthesises a location-based id (`6&122B2E46&0&1&1`) for such adapters, and it was being accepted
+  as if it were a serial — so moving that cable to another socket broke the very follow-the-cable
+  behaviour the pinning exists for. Those ids are now rejected and the port simply lists without a
+  serial. Adapters that report a real serial are unaffected.
+
+### Changed
+- **"Open in Excel" is now "Open CSV"** — it never needed Excel; it hands the file to whatever your
+  system opens `.csv` with.
+- The log window's action buttons centre their labels.
+
 ## [0.9.12-beta] - 2026-07-25
 
 ### Fixed
