@@ -5,6 +5,15 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.15-beta] - 2026-07-26
+
+### Fixed
+- **The Alarm tab scrolled again.** The Setup window had a hand-measured height, which goes stale
+  the moment anyone adds a line of text to a tab — as the wall-clock ID wording promptly did. The
+  window now measures its tabs at open and takes the height of the tallest, so every page fits and
+  the window no longer changes size as you click between tabs. Adding options can't quietly
+  reintroduce a scrollbar.
+
 ## [0.9.14-beta] - 2026-07-26
 
 ### Added

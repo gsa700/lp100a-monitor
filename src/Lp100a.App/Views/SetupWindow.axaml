@@ -3,7 +3,7 @@
         xmlns:vm="using:Lp100a.App.ViewModels"
         x:Class="Lp100a.App.Views.SetupWindow"
         x:DataType="vm:SetupViewModel"
-        Width="450" Height="520"
+        Width="450" SizeToContent="Height" MaxHeight="900"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
@@ -12,7 +12,7 @@
   <!-- Tabbed rather than one long scroll: the single stack had grown to seven sections and every
        new option pushed the window taller. Each tab's content sits in a ScrollViewer so a fixed
        window height can never clip a control out of reach. -->
-  <TabControl Margin="8" SelectedIndex="{Binding SelectedTabIndex}">
+  <TabControl x:Name="Tabs" Margin="8" SelectedIndex="{Binding SelectedTabIndex}">
 
     <!-- ==================== Connection ==================== -->
     <TabItem Header="Connection" AutomationProperties.Name="Connection">
