@@ -68,4 +68,24 @@ public sealed class DisplaySettings : ViewModelBase
     // Seconds the peak-hold marker sits at the peak before it starts to decay.
     private decimal _peakHoldSeconds = 1.0m;
     public decimal PeakHoldSeconds { get => _peakHoldSeconds; set => SetProperty(ref _peakHoldSeconds, value); }
+
+    // --- transmit timeout (TOT) ---
+    // Purely the app's own timer, unlike the SWR alarm which echoes the meter's hardware alarm.
+    // Drives the TX TIMER colour and the log's TimedOut column.
+    private bool _txTimeoutEnabled = true;
+    public bool TxTimeoutEnabled { get => _txTimeoutEnabled; set => SetProperty(ref _txTimeoutEnabled, value); }
+
+    private decimal _txTimeoutSeconds = 180m;
+    public decimal TxTimeoutSeconds { get => _txTimeoutSeconds; set => SetProperty(ref _txTimeoutSeconds, value); }
+
+    // --- station ID reminder ---
+    // Wall-clock across a whole communication (§97.119), not per-over. Never logged.
+    private bool _idTimerEnabled;
+    public bool IdTimerEnabled { get => _idTimerEnabled; set => SetProperty(ref _idTimerEnabled, value); }
+
+    private decimal _idIntervalMinutes = 10m;
+    public decimal IdIntervalMinutes { get => _idIntervalMinutes; set => SetProperty(ref _idIntervalMinutes, value); }
+
+    private bool _showIdTimer = true;
+    public bool ShowIdTimer { get => _showIdTimer; set => SetProperty(ref _showIdTimer, value); }
 }

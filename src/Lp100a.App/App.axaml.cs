@@ -43,7 +43,8 @@ public partial class App : Application
             _meter = new MeterService();
             _frequency = new FrequencyService(_config.RigctldEnabled,
                 _config.RigctldEndpoint ?? FrequencyService.DefaultEndpoint);
-            _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx, _frequency);
+            _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx, _frequency,
+                timeoutSeconds: (int)_display.TxTimeoutSeconds);
             _setupVm = new SetupViewModel(_meter, _display, _logging, _frequency)
             {
                 CheckUpdatesAtStartup = _config.CheckUpdatesAtStartup,

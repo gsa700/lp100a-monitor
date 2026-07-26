@@ -59,6 +59,31 @@
         <TextBlock Grid.Column="0" Text="TX TIMER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
         <TextBlock Grid.Column="1" Text="{Binding TxTimerText}" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{Binding TxBrush}" HorizontalAlignment="Right"/>
       </Grid>
+      <!-- Station ID reminder. Clickable: the app can't hear you identify, so tapping the value is
+           how you tell it, which restarts the ten minutes. Never written to the log. -->
+      <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IdRowVisible}" Margin="0,0,0,6">
+        <TextBlock Grid.Column="0" Text="ID TIMER" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Command="{Binding MarkIdentifiedCommand}" Content="{Binding IdTimerText}"
+                Tag="{Binding IdRowTag}"
+                FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="{Binding IdBrush}"
+                Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand"
+                HorizontalAlignment="Right" HorizontalContentAlignment="Right" MinWidth="90"
+                ToolTip.Tip="Time until your next station ID is due. Click when you've identified.">
+          <Button.Styles>
+            <!-- Flash while overdue so it catches the eye mid-QSO. -->
+            <Style Selector="Button[Tag=overdue]">
+              <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="INFINITE">
+                  <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+                  <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.35"/></KeyFrame>
+                  <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+                </Animation>
+              </Style.Animations>
+            </Style>
+          </Button.Styles>
+        </Button>
+      </Grid>
+
       <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding Display.ShowMeterMode}" Margin="0,0,0,6">
         <TextBlock Grid.Column="0" Text="METER MODE" Width="150" FontSize="11" FontWeight="Bold" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
         <!-- Clickable: sends 'F' to cycle the meter's Avg → Peak → Tune power mode. -->

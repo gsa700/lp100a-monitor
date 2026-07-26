@@ -8,6 +8,7 @@ namespace Lp100a.App.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private const double TxHangSeconds = 2.0;
+    private const double TxTimeoutWarnSeconds = 30.0;   // amber this long before the limit
     private static readonly double[] BarSteps = { 5, 10, 25, 50, 100, 150, 250, 400, 600, 1000, 1500, 2500, 3000 };
 
     private readonly MeterService _meter;
@@ -20,6 +21,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private double _heldPeak;
     private DateTime _heldPeakAt;
     private double _barRef;   // decaying reference that drives the bar's auto-range full-scale
+    private IdTimer _idTimer = new();
+    private bool _idDueOrOverdue;   // forces the ID row visible even when the row is toggled off
 
     public MainWindowViewModel(MeterService meter, DisplaySettings display)
     {
@@ -30,12 +33,20 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (e.PropertyName == nameof(DisplaySettings.ShowSwrBar))
                 OnPropertyChanged(nameof(SwrBarVisible));
+            // The interval is baked into the timer, so a change needs a fresh one.
+            if (e.PropertyName == nameof(DisplaySettings.IdIntervalMinutes))
+                _idTimer = NewIdTimer();
+            if (e.PropertyName is nameof(DisplaySettings.IdTimerEnabled)
+                or nameof(DisplaySettings.ShowIdTimer))
+                OnPropertyChanged(nameof(IdRowVisible));
         };
+        _idTimer = NewIdTimer();
 
         _meter.ReadingReceived += OnReading;
         _meter.StateChanged += OnStateChanged;
         _meter.PeakResetRequested += ResetPeak;
         ResetPeakCommand = new RelayCommand(ResetPeak);
+        MarkIdentifiedCommand = new RelayCommand(MarkIdentified);
         CyclePowerModeCommand = new RelayCommand(_meter.CyclePowerMode, () => _meter.IsConnected);
         CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
         OnStateChanged();
@@ -43,6 +54,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public DisplaySettings Display { get; }
     public RelayCommand ResetPeakCommand { get; }
+
+    /// <summary>Operator says they've identified — restarts the ten minutes. The app can't hear
+    /// the ID, so this is the only way it can know.</summary>
+    public RelayCommand MarkIdentifiedCommand { get; }
     public RelayCommand CyclePowerModeCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
 
@@ -111,6 +126,38 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private string _txTimerText = "0:00";
     public string TxTimerText { get => _txTimerText; private set => SetProperty(ref _txTimerText, value); }
+
+    private bool _txTimedOut;
+    /// <summary>The current over has passed the transmit-timeout limit.</summary>
+    public bool TxTimedOut { get => _txTimedOut; private set => SetProperty(ref _txTimedOut, value); }
+
+    private string _idTimerText = "—";
+    public string IdTimerText { get => _idTimerText; private set => SetProperty(ref _idTimerText, value); }
+
+    private IBrush _idBrush = Palette.DimBrush;
+    public IBrush IdBrush { get => _idBrush; private set => SetProperty(ref _idBrush, value); }
+
+    private bool _idOverdue;
+    /// <summary>An ID is due — drives the flashing on the ID row.</summary>
+    public bool IdOverdue
+    {
+        get => _idOverdue;
+        private set
+        {
+            if (SetProperty(ref _idOverdue, value)) IdRowTag = value ? "overdue" : "";
+        }
+    }
+
+    // Style-selector hook for the flash ([Tag=overdue]); kept as a string so the XAML needs no converter.
+    private string _idRowTag = "";
+    public string IdRowTag { get => _idRowTag; private set => SetProperty(ref _idRowTag, value); }
+
+    /// <summary>
+    /// The ID row. Hiding it keeps the display tidy, but a reminder you can't see is no reminder —
+    /// and the row is also the "I've identified" control — so it comes back on its own once an ID
+    /// is due or overdue. Same bargain the SWR alarm strikes in <see cref="SwrBarVisible"/>.
+    /// </summary>
+    public bool IdRowVisible => Display.IdTimerEnabled && (Display.ShowIdTimer || _idDueOrOverdue);
 
     private string _meterModeText = "—";
     public string MeterModeText { get => _meterModeText; private set => SetProperty(ref _meterModeText, value); }
@@ -244,17 +291,87 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (!_txActive) { _txActive = true; _txStart = now; }
             _txLast = now;
-            TxBrush = Palette.AmberBrush;
         }
         else if (_txActive && (now - _txLast).TotalSeconds > TxHangSeconds)
         {
             _txActive = false;
-            TxBrush = Palette.DimBrush;
         }
 
         var span = _txActive ? now - _txStart : _txLast - _txStart;
         if (span < TimeSpan.Zero) span = TimeSpan.Zero;
         TxTimerText = $"{(int)span.TotalMinutes}:{span.Seconds:00}";
+
+        // Transmit timeout: amber as it approaches, red at/past it. The timer keeps counting either
+        // way — this is a warning, not a cut-off; nothing is ever sent to key or unkey the radio.
+        var limit = (double)Display.TxTimeoutSeconds;
+        var overTime = Display.TxTimeoutEnabled && _txActive && span.TotalSeconds >= limit;
+        TxBrush = !_txActive ? Palette.DimBrush
+            : overTime ? Palette.RedBrush
+            : Display.TxTimeoutEnabled && span.TotalSeconds >= limit - TxTimeoutWarnSeconds ? Palette.GoldBrush
+            : Palette.AmberBrush;
+        TxTimedOut = overTime;
+
+        TrackId(r.IsTransmitting, now);
+    }
+
+    // --- station ID reminder (never logged) ---
+    private void TrackId(bool transmitting, DateTime now)
+    {
+        if (!Display.IdTimerEnabled)
+        {
+            _idTimer.Reset();
+            IdTimerText = "—";
+            IdBrush = Palette.DimBrush;
+            IdOverdue = false;
+            SetIdDue(false);
+            return;
+        }
+
+        _idTimer.Observe(transmitting, now);
+        SetIdDue(_idTimer.State is IdTimerState.Due or IdTimerState.Overdue);
+
+        switch (_idTimer.State)
+        {
+            case IdTimerState.Idle:
+                IdTimerText = $"{(int)Display.IdIntervalMinutes}:00";
+                IdBrush = Palette.DimBrush;
+                IdOverdue = false;
+                break;
+            case IdTimerState.Overdue:
+                // Count UP once due, so a glance says how overdue you are.
+                var o = _idTimer.Overdue;
+                IdTimerText = $"ID +{(int)o.TotalMinutes}:{o.Seconds:00}";
+                IdBrush = Palette.RedBrush;
+                IdOverdue = true;
+                break;
+            default:
+                var rem = _idTimer.Remaining;
+                IdTimerText = $"{(int)rem.TotalMinutes}:{rem.Seconds:00}";
+                IdBrush = _idTimer.State == IdTimerState.Due ? Palette.GoldBrush : Palette.GreenBrush;
+                IdOverdue = false;
+                break;
+        }
+    }
+
+    // Disarm after 1.5x the interval of silence: it must exceed the interval, or a quiet spell
+    // would cancel the reminder at the very moment it comes due.
+    private void SetIdDue(bool due)
+    {
+        if (_idDueOrOverdue == due) return;
+        _idDueOrOverdue = due;
+        OnPropertyChanged(nameof(IdRowVisible));
+    }
+
+    private IdTimer NewIdTimer()
+    {
+        var minutes = (double)Display.IdIntervalMinutes;
+        return new IdTimer(minutes, warnBeforeSeconds: 60, idleDisarmMinutes: minutes * 1.5);
+    }
+
+    private void MarkIdentified()
+    {
+        _idTimer.MarkIdentified(DateTime.Now);
+        TrackId(false, DateTime.Now);
     }
 
     private static double FitBarMax(double peak)

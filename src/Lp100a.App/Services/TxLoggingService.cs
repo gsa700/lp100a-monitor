@@ -15,15 +15,21 @@ public sealed class TxLoggingService : IDisposable
 {
     private readonly MeterService _meter;
     private readonly FrequencyService? _frequency;
-    private readonly TxOverTracker _tracker = new();
+    private readonly TxOverTracker _tracker;
     private readonly TxLogWriter _writer;
     private bool _wasLive;
 
+    /// <param name="timeoutSeconds">
+    /// The transmit-timeout, so an over at or past it is flagged in the log's TimedOut column.
+    /// Comes from Setup → Alarm; before this was wired the column used a hardcoded default that
+    /// nothing in the UI could see or change.
+    /// </param>
     public TxLoggingService(MeterService meter, string logPath, bool enabled,
-        FrequencyService? frequency = null)
+        FrequencyService? frequency = null, int timeoutSeconds = 180)
     {
         _meter = meter;
         _frequency = frequency;
+        _tracker = new TxOverTracker(timeoutSeconds: timeoutSeconds);
         _writer = new TxLogWriter(logPath);
         Enabled = enabled;
         _meter.ReadingReceived += OnReading;

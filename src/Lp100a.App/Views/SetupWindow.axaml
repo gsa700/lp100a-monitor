@@ -3,7 +3,7 @@
         xmlns:vm="using:Lp100a.App.ViewModels"
         x:Class="Lp100a.App.Views.SetupWindow"
         x:DataType="vm:SetupViewModel"
-        Width="450" Height="470"
+        Width="450" Height="640"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
@@ -123,6 +123,36 @@
           </StackPanel>
           <CheckBox Content="Show on-screen SWR alarm" IsChecked="{Binding Display.SwrBannerEnabled}"/>
           <TextBlock Text="Cycling the setpoint drives the meter's own alarm and relay. The on-screen banner echoes it. Note: the meter doesn't report a value for its User setpoint, so the banner can't show for User or Off — the meter's alarm still works."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+
+          <Border Height="1" Background="{StaticResource TrackBrush}"/>
+
+          <TextBlock Text="TRANSMIT TIMEOUT" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <CheckBox Content="Warn after" IsChecked="{Binding Display.TxTimeoutEnabled}" VerticalAlignment="Center"/>
+            <NumericUpDown Value="{Binding Display.TxTimeoutSeconds}" Minimum="30" Maximum="1800"
+                           Increment="30" FormatString="0" Width="124" VerticalAlignment="Center"
+                           IsEnabled="{Binding Display.TxTimeoutEnabled}"/>
+            <TextBlock Text="s of key-down" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+          </StackPanel>
+          <TextBlock Text="The TX TIMER turns amber 30 s before the limit and red at it, and the log's &quot;Timed out&quot; column marks those overs. This one is the app's own timer — it only warns, and never keys or unkeys the radio."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+
+          <Border Height="1" Background="{StaticResource TrackBrush}"/>
+
+          <TextBlock Text="STATION ID REMINDER" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <CheckBox Content="Remind me every" IsChecked="{Binding Display.IdTimerEnabled}" VerticalAlignment="Center"/>
+            <NumericUpDown Value="{Binding Display.IdIntervalMinutes}" Minimum="1" Maximum="60"
+                           Increment="1" FormatString="0" Width="110" VerticalAlignment="Center"
+                           IsEnabled="{Binding Display.IdTimerEnabled}"/>
+            <TextBlock Text="minutes" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
+          </StackPanel>
+          <CheckBox Content="Keep the ID row on screen" IsChecked="{Binding Display.ShowIdTimer}"
+                    IsEnabled="{Binding Display.IdTimerEnabled}"/>
+          <TextBlock Text="Counts down to your next ID. Unlike the transmit timeout this runs on the clock through the whole QSO — it keeps counting while you listen and doesn't restart when you unkey. Click the ID TIMER row when you've identified. Never written to the log."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="Unticked, the row stays out of the way and appears by itself when an ID falls due — so the reminder can still reach you."
                      Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
         </StackPanel>

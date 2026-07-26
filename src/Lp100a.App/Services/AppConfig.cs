@@ -49,6 +49,11 @@ public sealed class AppConfig
         d.PeakHoldEnabled = Display.PeakHoldEnabled;
         d.SwrBannerEnabled = Display.SwrBannerEnabled;
         d.PeakHoldSeconds = Display.PeakHoldSeconds;
+        d.TxTimeoutEnabled = Display.TxTimeoutEnabled;
+        d.TxTimeoutSeconds = Display.TxTimeoutSeconds;
+        d.IdTimerEnabled = Display.IdTimerEnabled;
+        d.IdIntervalMinutes = Display.IdIntervalMinutes;
+        d.ShowIdTimer = Display.ShowIdTimer;
     }
 
     public void CaptureFrom(DisplaySettings d)
@@ -71,6 +76,11 @@ public sealed class AppConfig
         Display.PeakHoldEnabled = d.PeakHoldEnabled;
         Display.SwrBannerEnabled = d.SwrBannerEnabled;
         Display.PeakHoldSeconds = d.PeakHoldSeconds;
+        Display.TxTimeoutEnabled = d.TxTimeoutEnabled;
+        Display.TxTimeoutSeconds = d.TxTimeoutSeconds;
+        Display.IdTimerEnabled = d.IdTimerEnabled;
+        Display.IdIntervalMinutes = d.IdIntervalMinutes;
+        Display.ShowIdTimer = d.ShowIdTimer;
     }
 }
 
@@ -94,6 +104,11 @@ public sealed class DisplayConfig
     public bool PeakHoldEnabled { get; set; } = true;
     public bool SwrBannerEnabled { get; set; } = true;
     public decimal PeakHoldSeconds { get; set; } = 1.0m;
+    public bool TxTimeoutEnabled { get; set; } = true;
+    public decimal TxTimeoutSeconds { get; set; } = 180m;
+    public bool IdTimerEnabled { get; set; }
+    public decimal IdIntervalMinutes { get; set; } = 10m;
+    public bool ShowIdTimer { get; set; } = true;
 }
 
 public static class ConfigStore

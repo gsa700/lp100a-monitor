@@ -19,6 +19,9 @@ public static class Palette
     public static readonly Color Red = Color.FromRgb(230, 76, 76);
     public static readonly Color Dim = Color.FromRgb(153, 153, 153);
     public static readonly Color Cyan = Color.FromRgb(42, 200, 200);
+    // Mirrors GoldBrush in App.axaml. Reads as "caution" between Green and Red — Amber here is
+    // the orange-red accent, which is too close to Red to signal an approaching limit.
+    public static readonly Color Gold = Color.FromRgb(255, 176, 0);
 
     public static readonly IBrush AmberBrush = new SolidColorBrush(Amber);
     public static readonly IBrush GreenBrush = new SolidColorBrush(Green);
@@ -26,4 +29,5 @@ public static class Palette
     public static readonly IBrush DimBrush = new SolidColorBrush(Dim);
     public static readonly IBrush TextBrush = new SolidColorBrush(Text);
     public static readonly IBrush CyanBrush = new SolidColorBrush(Cyan);
+    public static readonly IBrush GoldBrush = new SolidColorBrush(Gold);
 }
