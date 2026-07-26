@@ -4,116 +4,179 @@ namespace Lp100a.Core.Tests;
 
 public class IdTimerTests
 {
-    private static readonly DateTime T0 = new(2026, 1, 1, 12, 0, 0);
+    // Times of day matter here: the reminder fires on wall-clock marks (:00, :10, :20 …),
+    // not on a stopwatch started at the last ID.
+    private static DateTime At(int hour, int minute, int second = 0) =>
+        new(2026, 1, 1, hour, minute, second);
 
     [Fact]
-    public void StartsIdleAndArmsOnFirstTransmission()
+    public void IdleUntilTheFirstTransmission()
     {
         var t = new IdTimer();
-        t.Observe(transmitting: false, T0);
+        t.Observe(transmitting: false, At(12, 3));
         Assert.False(t.IsArmed);
         Assert.Equal(IdTimerState.Idle, t.State);
+    }
 
-        t.Observe(transmitting: true, T0.AddSeconds(5));
+    [Fact]
+    public void CountsDownToTheNextWallClockMark()
+    {
+        var t = new IdTimer();
+        t.Observe(transmitting: true, At(12, 3));       // QSO starts at :03
         Assert.True(t.IsArmed);
         Assert.Equal(IdTimerState.Running, t.State);
-        Assert.Equal(TimeSpan.FromMinutes(10), t.Remaining);
+        Assert.Equal(TimeSpan.FromMinutes(7), t.Remaining);   // :03 -> :10, not a fresh 10 minutes
+    }
+
+    [Fact]
+    public void MarkAlreadyPastWhenTheQsoStartedIsNotOurs()
+    {
+        var t = new IdTimer();
+        t.Observe(transmitting: true, At(12, 10, 30));   // started just after the :10 mark
+        Assert.Equal(IdTimerState.Running, t.State);     // not instantly overdue
+        Assert.Equal(TimeSpan.FromSeconds(570), t.Remaining);   // 9m30s to :20
+    }
+
+    [Fact]
+    public void WarnsInTheRunUpToTheMark()
+    {
+        var t = new IdTimer(warnBeforeSeconds: 60);
+        t.Observe(transmitting: true, At(12, 3));
+        t.Observe(transmitting: false, At(12, 9, 10));
+        Assert.Equal(IdTimerState.Due, t.State);          // inside the last minute
+        Assert.Equal(TimeSpan.FromSeconds(50), t.Remaining);
+    }
+
+    [Fact]
+    public void GoesOverdueAtTheMarkAndKeepsCounting()
+    {
+        var t = new IdTimer();
+        t.Observe(transmitting: true, At(12, 3));
+        t.Observe(transmitting: false, At(12, 10, 0));
+        Assert.Equal(IdTimerState.Overdue, t.State);
+        Assert.Equal(TimeSpan.Zero, t.Overdue);
+
+        t.Observe(transmitting: false, At(12, 12, 30));
+        Assert.Equal(IdTimerState.Overdue, t.State);
+        Assert.Equal(TimeSpan.FromSeconds(150), t.Overdue);   // 2m30s past :10
     }
 
     [Fact]
     public void KeepsRunningWhileReceiving()
     {
-        // The ten minutes are wall clock during a communication, NOT accumulated key-down time —
-        // this is the whole difference from the transmit-timeout.
+        // The whole point of wall clock: it doesn't pause or reset just because we're listening.
         var t = new IdTimer();
-        t.Observe(true, T0);                       // arm
-        t.Observe(false, T0.AddMinutes(4));        // listening to the other station
-        Assert.Equal(TimeSpan.FromMinutes(6), t.Remaining);
+        t.Observe(transmitting: true, At(12, 1));
+        t.Observe(transmitting: false, At(12, 5));
         Assert.Equal(IdTimerState.Running, t.State);
-    }
-
-    [Fact]
-    public void KeyUpDoesNotResetIt()
-    {
-        var t = new IdTimer();
-        t.Observe(true, T0);
-        t.Observe(false, T0.AddMinutes(3));
-        t.Observe(true, T0.AddMinutes(5));         // a new over, mid-QSO
         Assert.Equal(TimeSpan.FromMinutes(5), t.Remaining);
     }
 
     [Fact]
-    public void WarnsBeforeDueThenGoesOverdue()
+    public void UnkeyingDoesNotRestartTheCount()
     {
         var t = new IdTimer();
-        t.Observe(true, T0);
+        t.Observe(transmitting: true, At(12, 2));
+        t.Observe(transmitting: false, At(12, 4));
+        t.Observe(transmitting: true, At(12, 6));      // new over, same communication
+        Assert.Equal(TimeSpan.FromMinutes(4), t.Remaining);   // still counting to :10
+    }
 
-        t.Observe(false, T0.AddMinutes(8));
-        Assert.Equal(IdTimerState.Running, t.State);
-
-        t.Observe(false, T0.AddSeconds(9 * 60 + 15));   // inside the 60 s warning window
-        Assert.Equal(IdTimerState.Due, t.State);
-
-        t.Observe(false, T0.AddSeconds(10 * 60 + 30));
+    [Fact]
+    public void IdentifyingAnswersTheMarkAndMovesToTheNext()
+    {
+        var t = new IdTimer();
+        t.Observe(transmitting: true, At(12, 3));
+        t.Observe(transmitting: false, At(12, 11));    // overdue at :10
         Assert.Equal(IdTimerState.Overdue, t.State);
-        Assert.Equal(TimeSpan.Zero, t.Remaining);
+
+        t.MarkIdentified(At(12, 11, 30));
+        Assert.Equal(IdTimerState.Running, t.State);
+        Assert.Equal(TimeSpan.FromSeconds(510), t.Remaining);   // 8m30s to :20
+
+        t.Observe(transmitting: false, At(12, 15));
+        Assert.Equal(IdTimerState.Running, t.State);            // stays clear until :20
+    }
+
+    [Fact]
+    public void IdentifyingJustBeforeAMarkAlsoSatisfiesThatMark()
+    {
+        // Giving your call at :09:30 shouldn't be met with "ID now" thirty seconds later.
+        var t = new IdTimer(warnBeforeSeconds: 60);
+        t.Observe(transmitting: true, At(12, 3));
+        t.MarkIdentified(At(12, 9, 30));
+
+        Assert.Equal(TimeSpan.FromSeconds(630), t.Remaining);   // counts on to :20, not :10
+        t.Observe(transmitting: false, At(12, 10, 5));
+        Assert.NotEqual(IdTimerState.Overdue, t.State);
+        t.Observe(transmitting: false, At(12, 20, 1));
+        Assert.Equal(IdTimerState.Overdue, t.State);            // the :20 mark does still count
+    }
+
+    [Fact]
+    public void MarksAreAbsolute_SoStationsAgreeRegardlessOfWhenTheyStarted()
+    {
+        var early = new IdTimer();
+        var late = new IdTimer();
+        early.Observe(transmitting: true, At(9, 1));
+        late.Observe(transmitting: true, At(9, 8));
+
+        early.Observe(transmitting: false, At(9, 10, 0));
+        late.Observe(transmitting: false, At(9, 10, 0));
+        Assert.Equal(IdTimerState.Overdue, early.State);
+        Assert.Equal(IdTimerState.Overdue, late.State);
+    }
+
+    [Fact]
+    public void CustomIntervalUsesItsOwnMarks()
+    {
+        var t = new IdTimer(intervalMinutes: 15);       // :00 :15 :30 :45
+        t.Observe(transmitting: true, At(12, 5));
+        Assert.Equal(TimeSpan.FromMinutes(10), t.Remaining);
+        t.Observe(transmitting: false, At(12, 15, 1));
+        Assert.Equal(IdTimerState.Overdue, t.State);
+    }
+
+    [Fact]
+    public void MarksRollOverTheHour()
+    {
+        var t = new IdTimer();
+        t.Observe(transmitting: true, At(12, 55));
+        Assert.Equal(TimeSpan.FromMinutes(5), t.Remaining);     // to 13:00
+        t.Observe(transmitting: false, At(13, 0, 30));
+        Assert.Equal(IdTimerState.Overdue, t.State);
         Assert.Equal(TimeSpan.FromSeconds(30), t.Overdue);
     }
 
     [Fact]
-    public void IdentifyingRestartsTheIntervalButStaysArmed()
+    public void DisarmsAfterALongSilence()
     {
-        var t = new IdTimer();
-        t.Observe(true, T0);
-        t.Observe(false, T0.AddMinutes(11));
-        Assert.Equal(IdTimerState.Overdue, t.State);
-
-        t.MarkIdentified(T0.AddMinutes(11));
-        Assert.True(t.IsArmed);                     // the QSO is still going
-        Assert.Equal(IdTimerState.Running, t.State);
-        Assert.Equal(TimeSpan.FromMinutes(10), t.Remaining);
-
-        t.Observe(false, T0.AddMinutes(16));
-        Assert.Equal(TimeSpan.FromMinutes(5), t.Remaining);
-    }
-
-    [Fact]
-    public void DisarmsAfterALongQuietSpell()
-    {
-        // The QSO ended; an idle station shouldn't be nagged to identify.
-        var t = new IdTimer(idleDisarmMinutes: 10);
-        t.Observe(true, T0);
-        t.Observe(false, T0.AddMinutes(9));
-        Assert.True(t.IsArmed);
-
-        t.Observe(false, T0.AddMinutes(10.5));
+        var t = new IdTimer(idleDisarmMinutes: 15);
+        t.Observe(transmitting: true, At(12, 3));
+        t.Observe(transmitting: false, At(12, 18, 1));
         Assert.False(t.IsArmed);
         Assert.Equal(IdTimerState.Idle, t.State);
     }
 
     [Fact]
-    public void ReArmsOnTheNextCommunication()
+    public void IdleDisarmMustOutlastTheIntervalSoOverdueCanBeSeen()
     {
-        var t = new IdTimer(idleDisarmMinutes: 10);
-        t.Observe(true, T0);
-        t.Observe(false, T0.AddMinutes(11));       // disarms
-        Assert.False(t.IsArmed);
-
-        t.Observe(true, T0.AddMinutes(20));        // new QSO: full interval again
+        // Regression: with disarm == interval, a quiet stretch disarmed the timer at the very
+        // moment it should have gone overdue, so the reminder could never appear.
+        var t = new IdTimer(intervalMinutes: 10, idleDisarmMinutes: 15);
+        t.Observe(transmitting: true, At(12, 5));
+        t.Observe(transmitting: false, At(12, 12));
+        Assert.Equal(IdTimerState.Overdue, t.State);
         Assert.True(t.IsArmed);
-        Assert.Equal(TimeSpan.FromMinutes(10), t.Remaining);
     }
 
     [Fact]
-    public void HonoursACustomInterval()
+    public void IdentifyingCountsAsActivitySoItDoesNotImmediatelyDisarm()
     {
-        var t = new IdTimer(intervalMinutes: 5, warnBeforeSeconds: 30);
-        t.Observe(true, T0);
-        t.Observe(false, T0.AddMinutes(4));
-        Assert.Equal(IdTimerState.Running, t.State);
-        t.Observe(false, T0.AddSeconds(4 * 60 + 40));
-        Assert.Equal(IdTimerState.Due, t.State);
-        t.Observe(false, T0.AddMinutes(5));
-        Assert.Equal(IdTimerState.Overdue, t.State);
+        var t = new IdTimer(idleDisarmMinutes: 15);
+        t.Observe(transmitting: true, At(12, 0));
+        t.MarkIdentified(At(12, 14));
+        t.Observe(transmitting: false, At(12, 20));   // 6 min after the ID, not 20 after the over
+        Assert.True(t.IsArmed);
     }
 }

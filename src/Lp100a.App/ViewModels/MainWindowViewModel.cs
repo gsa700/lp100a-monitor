@@ -326,7 +326,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         switch (_idTimer.State)
         {
             case IdTimerState.Idle:
-                IdTimerText = $"{(int)Display.IdIntervalMinutes}:00";
+                // Nothing to count to until a QSO starts — the marks are wall-clock times, so
+                // showing a full interval here would be a number that never actually applies.
+                IdTimerText = "—";
                 IdBrush = Palette.DimBrush;
                 IdOverdue = false;
                 break;
