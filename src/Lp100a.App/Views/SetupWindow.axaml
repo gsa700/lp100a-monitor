@@ -3,7 +3,7 @@
         xmlns:vm="using:Lp100a.App.ViewModels"
         x:Class="Lp100a.App.Views.SetupWindow"
         x:DataType="vm:SetupViewModel"
-        Width="450" Height="640"
+        Width="450" Height="520"
         CanResize="False" ShowInTaskbar="False"
         Background="{StaticResource BgBrush}"
         Icon="/Assets/app-icon.png"
