@@ -5,6 +5,26 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.14-beta] - 2026-07-26
+
+### Added
+- **Transmit timeout** (Setup → Alarm) — warn after a set time of continuous key-down. The TX TIMER
+  goes amber 30 s before the limit and red at it, and keeps counting. This is the app's own timer:
+  it only warns, and never keys or unkeys the radio. It's also what the log's **Timed out** column
+  has always meant — until now that column ran off a fixed 180 s that nothing in the app could see
+  or change.
+- **Station ID reminder** (Setup → Alarm) — identify *on the tens*. The reminder falls on the clock
+  itself (:00, :10, :20 past the hour), not ten minutes after you last identified, so it lands on a
+  number you can read off any clock in the shack. It counts down in its own row, keeps running while
+  you listen, and doesn't restart when you unkey — only identifying clears it, by clicking the row.
+  A mark already past when the QSO began isn't held against you, identifying in the final minute
+  satisfies the mark just ahead, and a missed mark stays flagged instead of quietly clearing at the
+  next one. Off by default, and never written to the log.
+
+### Changed
+- The Setup window is shorter (640 → 520 px): measured against the tallest tab, it had been carrying
+  about 150 px of empty space under every tab. No tab scrolls at the new height.
+
 ## [0.9.13-beta] - 2026-07-25
 
 ### Added
