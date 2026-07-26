@@ -22,7 +22,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     private DateTime _heldPeakAt;
     private double _barRef;   // decaying reference that drives the bar's auto-range full-scale
     private IdTimer _idTimer = new();
-    private bool _idDueOrOverdue;   // forces the ID row visible even when the row is toggled off
 
     public MainWindowViewModel(MeterService meter, DisplaySettings display)
     {
@@ -36,8 +35,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             // The interval is baked into the timer, so a change needs a fresh one.
             if (e.PropertyName == nameof(DisplaySettings.IdIntervalMinutes))
                 _idTimer = NewIdTimer();
-            if (e.PropertyName is nameof(DisplaySettings.IdTimerEnabled)
-                or nameof(DisplaySettings.ShowIdTimer))
+            if (e.PropertyName == nameof(DisplaySettings.IdTimerEnabled))
                 OnPropertyChanged(nameof(IdRowVisible));
         };
         _idTimer = NewIdTimer();
@@ -152,12 +150,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _idRowTag = "";
     public string IdRowTag { get => _idRowTag; private set => SetProperty(ref _idRowTag, value); }
 
-    /// <summary>
-    /// The ID row. Hiding it keeps the display tidy, but a reminder you can't see is no reminder —
-    /// and the row is also the "I've identified" control — so it comes back on its own once an ID
-    /// is due or overdue. Same bargain the SWR alarm strikes in <see cref="SwrBarVisible"/>.
-    /// </summary>
-    public bool IdRowVisible => Display.IdTimerEnabled && (Display.ShowIdTimer || _idDueOrOverdue);
+    /// <summary>The ID row is simply on whenever the reminder is — a reminder you can't see isn't
+    /// one, and the row doubles as the "I've identified" control.</summary>
+    public bool IdRowVisible => Display.IdTimerEnabled;
 
     private string _meterModeText = "—";
     public string MeterModeText { get => _meterModeText; private set => SetProperty(ref _meterModeText, value); }
@@ -323,12 +318,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             IdTimerText = "—";
             IdBrush = Palette.DimBrush;
             IdOverdue = false;
-            SetIdDue(false);
             return;
         }
 
         _idTimer.Observe(transmitting, now);
-        SetIdDue(_idTimer.State is IdTimerState.Due or IdTimerState.Overdue);
 
         switch (_idTimer.State)
         {
@@ -355,13 +348,6 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     // Disarm after 1.5x the interval of silence: it must exceed the interval, or a quiet spell
     // would cancel the reminder at the very moment it comes due.
-    private void SetIdDue(bool due)
-    {
-        if (_idDueOrOverdue == due) return;
-        _idDueOrOverdue = due;
-        OnPropertyChanged(nameof(IdRowVisible));
-    }
-
     private IdTimer NewIdTimer()
     {
         var minutes = (double)Display.IdIntervalMinutes;

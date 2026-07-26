@@ -85,7 +85,4 @@ public sealed class DisplaySettings : ViewModelBase
 
     private decimal _idIntervalMinutes = 10m;
     public decimal IdIntervalMinutes { get => _idIntervalMinutes; set => SetProperty(ref _idIntervalMinutes, value); }
-
-    private bool _showIdTimer = true;
-    public bool ShowIdTimer { get => _showIdTimer; set => SetProperty(ref _showIdTimer, value); }
 }

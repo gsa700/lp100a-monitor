@@ -53,7 +53,6 @@ public sealed class AppConfig
         d.TxTimeoutSeconds = Display.TxTimeoutSeconds;
         d.IdTimerEnabled = Display.IdTimerEnabled;
         d.IdIntervalMinutes = Display.IdIntervalMinutes;
-        d.ShowIdTimer = Display.ShowIdTimer;
     }
 
     public void CaptureFrom(DisplaySettings d)
@@ -80,7 +79,6 @@ public sealed class AppConfig
         Display.TxTimeoutSeconds = d.TxTimeoutSeconds;
         Display.IdTimerEnabled = d.IdTimerEnabled;
         Display.IdIntervalMinutes = d.IdIntervalMinutes;
-        Display.ShowIdTimer = d.ShowIdTimer;
     }
 }
 
@@ -108,7 +106,6 @@ public sealed class DisplayConfig
     public decimal TxTimeoutSeconds { get; set; } = 180m;
     public bool IdTimerEnabled { get; set; }
     public decimal IdIntervalMinutes { get; set; } = 10m;
-    public bool ShowIdTimer { get; set; } = true;
 }
 
 public static class ConfigStore

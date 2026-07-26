@@ -148,11 +148,7 @@
                            IsEnabled="{Binding Display.IdTimerEnabled}"/>
             <TextBlock Text="minutes" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"/>
           </StackPanel>
-          <CheckBox Content="Keep the ID row on screen" IsChecked="{Binding Display.ShowIdTimer}"
-                    IsEnabled="{Binding Display.IdTimerEnabled}"/>
-          <TextBlock Text="Counts down to your next ID. Unlike the transmit timeout this runs on the clock through the whole QSO — it keeps counting while you listen and doesn't restart when you unkey. Click the ID TIMER row when you've identified. Never written to the log."
-                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
-          <TextBlock Text="Unticked, the row stays out of the way and appears by itself when an ID falls due — so the reminder can still reach you."
+          <TextBlock Text="Counts down to your next ID in its own row on the main window. Unlike the transmit timeout this runs on the clock through the whole QSO — it keeps counting while you listen and doesn't restart when you unkey. Click the ID TIMER row when you've identified. Never written to the log."
                      Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
 
         </StackPanel>
