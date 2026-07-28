@@ -15,6 +15,19 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
   migrations separately diagnosable. Building from source now needs the .NET 10 SDK; the shipped
   builds are self-contained, so nothing changes for anyone running a release.
 - Self-contained builds grew roughly 7% (win-x64 90 MB → 96 MB).
+- **Upgraded to Avalonia 12.1.0** from 11.2.1. This clears a high-severity advisory
+  ([GHSA-xrw6-gwf8-vvr9](https://github.com/advisories/GHSA-xrw6-gwf8-vvr9)) in
+  `Tmds.DBus.Protocol`, which reaches the app transitively through `Avalonia.FreeDesktop` and so
+  could only be fixed by moving Avalonia. Affected Linux and Raspberry Pi builds; Windows never
+  used the DBus layer. The upgrade needed one source change — `TextBox.Watermark` is now
+  `PlaceholderText` — and no behavioural changes.
+- `Avalonia.Diagnostics` dropped: it has no 12.x release, and nothing in the app ever attached
+  DevTools, so the Debug-only reference was unused.
+
+### Fixed
+- Release archives no longer carry ~101 MB of native SkiaSharp/HarfBuzzSharp debug symbols.
+  Avalonia 12 ships them, and unlike the native libraries themselves they are not bundled into
+  the single-file executable, so they landed loose next to it.
 
 ## [0.9.15-beta] - 2026-07-26
 

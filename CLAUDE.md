@@ -3,7 +3,7 @@
 Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wattmeter.
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
-**.NET 10 + Avalonia 11.2.1**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
+**.NET 10 + Avalonia 12.1.0**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
 By David Erickson (AB0R). Status: **0.9.15-beta**.
 
 This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
@@ -98,28 +98,40 @@ win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must
 updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
 
-## .NET 10 migration (done) and the Avalonia 12 bump (not done)
+## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
-All four projects target `net10.0` — Core, App, Tests, and `tools/IconGen`. Done because .NET 8's
-LTS support window closes in November 2026. `System.IO.Ports` and `System.Management` moved 8.0.0 →
-10.0.10 to match the runtime.
+Both done, deliberately as two commits so a regression points at one culprit rather than two.
 
-**Avalonia stayed at 11.2.1 on purpose.** Avalonia 12.1.0 is out, but 11.2.1 ships `lib/net8.0`
-assets that a `net10.0` app consumes fine, so the framework move did not require it. Keeping the
-two changes apart means a regression points at one culprit, not two. Verified on the TFM change
-alone: 90/90 tests, all three RIDs publish as a true single file, and the Windows build connects to
-a real LP-100A and renders.
+**.NET 10.** All four projects target `net10.0` — Core, App, Tests, and `tools/IconGen`. Driven by
+.NET 8's LTS support window closing in November 2026. `System.IO.Ports` and `System.Management`
+moved 8.0.0 → 10.0.10 to match the runtime. Avalonia stayed at 11.2.1 for that commit: its
+`lib/net8.0` assets run unchanged under `net10.0`, so the framework move never required the bump.
 
-Still open, in rough priority order:
-- **Avalonia 11.2.1 → 12.x** is a major-version migration with its own breaking changes. Do it as a
-  separate branch with its own smoke test, not folded into anything else.
-- **`Tmds.DBus.Protocol` 0.20.0 carries a high-severity advisory** (GHSA-xrw6-gwf8-vvr9). It is
-  transitive via `Avalonia.FreeDesktop`, so it is pinned by the Avalonia version and **only the
-  Avalonia bump clears it**. Linux/Pi only — the DBus layer isn't used on Windows. This predates
-  the .NET 10 work; it surfaced when a fresh restore re-ran the audit.
-- **linux-x64 / linux-arm64 have only been cross-published, never run.** The CM5 needs a real
-  launch before any release ships on this.
-- **The in-app `UpdateService` round trip is unverified on net10.** It replaces only the exe, so
-  confirm the self-extracting single file still carries its native libs after an in-place update.
+**Avalonia 12.1.0.** Went far more smoothly than the "major version" label suggests — one
+deprecation total (`TextBox.Watermark` → `PlaceholderText`, in `SetupWindow.axaml`) and no code
+changes. Two things to know:
+- **`Avalonia.Diagnostics` was dropped, not bumped.** It has no 12.x release. Nothing ever called
+  `AttachDevTools()`, so the Debug-only reference was dead weight. If you ever want DevTools back,
+  check where 12.x moved them rather than re-adding the 11.x package.
+- **`Tmds.DBus.Protocol` 0.20.0 → 0.94.1 clears GHSA-xrw6-gwf8-vvr9** (high severity, Linux/Pi
+  only). It is transitive via `Avalonia.FreeDesktop`, so the Avalonia version was the only lever —
+  this is why the bump happened when it did. `dotnet list package --vulnerable --include-transitive`
+  is now clean across all three projects; that's the command to re-check with.
+
+**Watch the publish output.** Avalonia 12's SkiaSharp/HarfBuzzSharp build ships native `.pdb`
+symbols (~101 MB combined) that do *not* get bundled into the single file — they land loose beside
+the exe. The `TrimNativeSymbols` target in `Lp100a.App.csproj` drops them at publish. If release
+zips ever balloon again, look there first.
+
+Verified on Windows against a real LP-100A: 90/90 tests, all three RIDs publish as a true single
+file, and the app connects, renders the Smith chart and the DataGrid log, and scales correctly at
+150% desktop scaling. Sizes: win-x64 100 MB, linux-x64 96 MB, linux-arm64 102 MB (net8/Avalonia 11
+was 90/85/91).
+
+Still open:
+- **linux-x64 / linux-arm64 have only been cross-published, never run.** The CM5 needs a real launch
+  before any release ships on this — it's the one platform where the DBus layer is actually used.
+- **The in-app `UpdateService` round trip is unverified on both changes.** It replaces only the exe,
+  so confirm the self-extracting single file still carries its native libs after an in-place update.
 
 Publish size grew about 7% (win-x64 90 MB → 96 MB, linux-x64 85 → 92, linux-arm64 91 → 97).

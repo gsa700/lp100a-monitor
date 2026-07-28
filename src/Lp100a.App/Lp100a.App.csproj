@@ -27,14 +27,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Avalonia 11.x. Bump with: dotnet add package Avalonia -->
-    <PackageReference Include="Avalonia" Version="11.2.1" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.1" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.1" />
+    <!-- Avalonia 12.x. Bump with: dotnet add package Avalonia -->
+    <PackageReference Include="Avalonia" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
     <!-- DataGrid ships separately from core Avalonia; used by the TX log viewer. -->
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.1" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.1" />
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.2.1" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+    <!-- No Avalonia.Diagnostics: it has no 12.x release, and nothing here ever called
+         AttachDevTools(), so the old Debug-only reference was dead weight. -->
+
   </ItemGroup>
 
   <ItemGroup>
@@ -45,5 +47,18 @@
   <ItemGroup>
     <ProjectReference Include="..\Lp100a.Core\Lp100a.Core.csproj" />
   </ItemGroup>
+
+  <!-- Avalonia 12 pulls SkiaSharp/HarfBuzzSharp builds that ship native .pdb symbols
+       (libSkiaSharp ~81 MB, libHarfBuzzSharp ~20 MB). Unlike the natives themselves these are
+       NOT bundled into the single file — they land loose next to the exe and would roughly
+       triple every release zip. Nobody running a release needs them. The managed pdbs are tiny
+       and stay, so crash traces from the app's own code still resolve. -->
+  <Target Name="TrimNativeSymbols" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish
+        Remove="@(ResolvedFileToPublish)"
+        Condition="'%(Extension)' == '.pdb' And $([System.String]::Copy('%(Filename)').StartsWith('lib'))" />
+    </ItemGroup>
+  </Target>
 
 </Project>
