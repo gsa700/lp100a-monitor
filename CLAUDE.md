@@ -97,3 +97,20 @@ For dual-coupler/SO2R later: one rigctld endpoint per radio + `\get_ptt` to tell
 win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must match the
 updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
+
+## TODO: evaluate moving to .NET 10
+
+Currently `net8.0` across all three projects. .NET 8 is LTS but its support window ends in
+November 2026, so the move wants looking at before then rather than after. .NET 10 is the
+current LTS. The station box already has both SDKs installed (8.0.423 and 10.0.302).
+
+Things to check before committing to it:
+- **Avalonia** is pinned at 11.2.1 — confirm the version in use supports `net10.0`, and whether
+  the upgrade forces an Avalonia bump too (that's the risk, not the TFM itself).
+- `System.Management` 8.0.0 (used for adapter chip serials in `PortIdentity`) needs a matching bump.
+- Re-publish and **retest all three runtime IDs** — win-x64, linux-x64, linux-arm64. The Pi/CM5
+  arm64 build is the one most likely to surprise.
+- The self-contained publish size and the in-app `UpdateService` flow both need a real check on
+  Windows and the CM5, since that's how field updates land.
+
+Not urgent, and not worth doing mid-beta — good candidate for right after 1.0.
