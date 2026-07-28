@@ -3,17 +3,17 @@
 Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wattmeter.
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
-**.NET 8 + Avalonia 11.2.1**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
+**.NET 10 + Avalonia 11.2.1**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
 By David Erickson (AB0R). Status: **0.9.15-beta**.
 
-This app's .NET 8 + Avalonia layout is the reference template for the station tools (the W2
+This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
 
 ## Build / run
 
 ```sh
 dotnet restore
-dotnet run --project src/Lp100a.App            # needs the .NET 8 SDK + a desktop/DISPLAY
+dotnet run --project src/Lp100a.App            # needs the .NET 10 SDK + a desktop/DISPLAY
 ```
 
 Solution: `LP100A.sln`. Output assembly is `Lp100aMonitor`. Run tests with `dotnet test`.
@@ -98,19 +98,28 @@ win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must
 updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
 
-## TODO: evaluate moving to .NET 10
+## .NET 10 migration (done) and the Avalonia 12 bump (not done)
 
-Currently `net8.0` across all three projects. .NET 8 is LTS but its support window ends in
-November 2026, so the move wants looking at before then rather than after. .NET 10 is the
-current LTS. The station box already has both SDKs installed (8.0.423 and 10.0.302).
+All four projects target `net10.0` — Core, App, Tests, and `tools/IconGen`. Done because .NET 8's
+LTS support window closes in November 2026. `System.IO.Ports` and `System.Management` moved 8.0.0 →
+10.0.10 to match the runtime.
 
-Things to check before committing to it:
-- **Avalonia** is pinned at 11.2.1 — confirm the version in use supports `net10.0`, and whether
-  the upgrade forces an Avalonia bump too (that's the risk, not the TFM itself).
-- `System.Management` 8.0.0 (used for adapter chip serials in `PortIdentity`) needs a matching bump.
-- Re-publish and **retest all three runtime IDs** — win-x64, linux-x64, linux-arm64. The Pi/CM5
-  arm64 build is the one most likely to surprise.
-- The self-contained publish size and the in-app `UpdateService` flow both need a real check on
-  Windows and the CM5, since that's how field updates land.
+**Avalonia stayed at 11.2.1 on purpose.** Avalonia 12.1.0 is out, but 11.2.1 ships `lib/net8.0`
+assets that a `net10.0` app consumes fine, so the framework move did not require it. Keeping the
+two changes apart means a regression points at one culprit, not two. Verified on the TFM change
+alone: 90/90 tests, all three RIDs publish as a true single file, and the Windows build connects to
+a real LP-100A and renders.
 
-Not urgent, and not worth doing mid-beta — good candidate for right after 1.0.
+Still open, in rough priority order:
+- **Avalonia 11.2.1 → 12.x** is a major-version migration with its own breaking changes. Do it as a
+  separate branch with its own smoke test, not folded into anything else.
+- **`Tmds.DBus.Protocol` 0.20.0 carries a high-severity advisory** (GHSA-xrw6-gwf8-vvr9). It is
+  transitive via `Avalonia.FreeDesktop`, so it is pinned by the Avalonia version and **only the
+  Avalonia bump clears it**. Linux/Pi only — the DBus layer isn't used on Windows. This predates
+  the .NET 10 work; it surfaced when a fresh restore re-ran the audit.
+- **linux-x64 / linux-arm64 have only been cross-published, never run.** The CM5 needs a real
+  launch before any release ships on this.
+- **The in-app `UpdateService` round trip is unverified on net10.** It replaces only the exe, so
+  confirm the self-extracting single file still carries its native libs after an in-place update.
+
+Publish size grew about 7% (win-x64 90 MB → 96 MB, linux-x64 85 → 92, linux-arm64 91 → 97).

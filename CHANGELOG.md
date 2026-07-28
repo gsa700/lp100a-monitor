@@ -5,6 +5,17 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [Unreleased]
+
+### Changed
+- **Moved to .NET 10.** All four projects retarget `net8.0` → `net10.0`, ahead of .NET 8's LTS
+  support window closing in November 2026. `System.IO.Ports` and `System.Management` bumped
+  8.0.0 → 10.0.10 to match the runtime. Avalonia deliberately stays at 11.2.1 — its `net8.0`
+  assets work unchanged under `net10.0`, and holding the Avalonia 12 bump back keeps the two
+  migrations separately diagnosable. Building from source now needs the .NET 10 SDK; the shipped
+  builds are self-contained, so nothing changes for anyone running a release.
+- Self-contained builds grew roughly 7% (win-x64 90 MB → 96 MB).
+
 ## [0.9.15-beta] - 2026-07-26
 
 ### Fixed

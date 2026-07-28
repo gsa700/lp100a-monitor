@@ -1,7 +1,7 @@
 # LP-100A Monitor
 
 A cross-platform desktop monitor for the TelePost **LP-100A Digital Vector RF
-Wattmeter**, built on **.NET 8 + Avalonia**. It reads the meter over USB serial and
+Wattmeter**, built on **.NET 10 + Avalonia**. It reads the meter over USB serial and
 shows forward power, SWR, reflected power, return loss, dBm, and — the reason for
 this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
@@ -106,7 +106,7 @@ your logger for the radio. When no frequency is known the column is deliberately
 
 ## Build from source
 
-Requires the .NET 8 SDK.
+Requires the .NET 10 SDK.
 
 ```
 dotnet restore
