@@ -5,7 +5,7 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
-## [Unreleased]
+## [0.9.17-beta] - 2026-07-28
 
 ### Added
 - **The app installs itself on Windows.** Run a freshly unzipped copy and it offers to install:
