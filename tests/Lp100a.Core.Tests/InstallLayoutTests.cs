@@ -4,10 +4,12 @@ namespace Lp100a.Core.Tests;
 
 public class InstallLayoutTests
 {
-    // Paths are built with Path.Combine so the separators are native wherever the tests run.
+    // Paths are built with Path.Combine so the separators are native wherever the tests run, and
+    // the naming convention is passed explicitly so these don't change meaning on a Linux runner.
     private static string Programs => Path.Combine("C:", "Users", "ab0r", "AppData", "Local", "Programs");
-    private static string InstallDir => InstallLayout.InstallDirectoryUnder(Programs);
-    private static IEnumerable<string> Installed => InstallLayout.InstalledDirectoriesUnder(Programs);
+    private static string InstallDir => InstallLayout.InstallDirectoryUnder(Programs, windows: true);
+    private static IEnumerable<string> Installed =>
+        InstallLayout.InstalledDirectoriesUnder(Programs, windows: true);
 
     [Fact]
     public void RunningFromTheInstallDirectoryIsInstalled()
@@ -88,7 +90,24 @@ public class InstallLayoutTests
     [Fact]
     public void TheInstallDirectorySitsUnderTheProgramsDirectory()
     {
-        Assert.Equal(Path.Combine(Programs, "LP-100A Monitor"), InstallLayout.InstallDirectoryUnder(Programs));
+        Assert.Equal(Path.Combine(Programs, "LP-100A Monitor"),
+            InstallLayout.InstallDirectoryUnder(Programs, windows: true));
+    }
+
+    [Fact]
+    public void LinuxUsesTheXdgStyleFolderName()
+    {
+        // Lower-case, hyphenated, and free of the space that would need quoting in the .desktop
+        // entry's Exec line.
+        var share = Path.Combine("home", "ab0r", ".local", "share");
+        Assert.Equal(Path.Combine(share, "lp100a-monitor"),
+            InstallLayout.InstallDirectoryUnder(share, windows: false));
+    }
+
+    [Fact]
+    public void TheUnixFolderNameHasNoSpaces()
+    {
+        Assert.DoesNotContain(' ', InstallLayout.ProductFolderUnix);
     }
 
     [Fact]

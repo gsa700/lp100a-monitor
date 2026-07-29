@@ -56,9 +56,38 @@ public static class InstallService
 
     public static string ExeDirectory => Path.GetDirectoryName(ExePath)!;
 
-    /// <summary>Per-user programs directory: <c>%LOCALAPPDATA%\Programs</c>.</summary>
-    public static string ProgramsDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs");
+    /// <summary>
+    /// Per-user programs directory: <c>%LOCALAPPDATA%\Programs</c> on Windows,
+    /// <c>~/.local/share</c> on Linux. <see cref="Environment.SpecialFolder.LocalApplicationData"/>
+    /// already resolves to the right base on both; only Windows wants the extra <c>Programs</c>
+    /// level, because <c>~/.local/share</c> is itself where per-user application data belongs.
+    /// </summary>
+    public static string ProgramsDirectory
+    {
+        get
+        {
+            var b = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return OperatingSystem.IsWindows() ? Path.Combine(b, "Programs") : b;
+        }
+    }
+
+    private static string HomeDirectory =>
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+    /// <summary>Where the menu entry goes: <c>~/.local/share/applications</c>.</summary>
+    private static string DesktopFilePath =>
+        Path.Combine(ProgramsDirectory, "applications", DesktopEntry.FileName);
+
+    /// <summary>Icon path in the XDG hicolor theme, at the 256px size IconGen emits.</summary>
+    private static string IconFilePath => Path.Combine(
+        ProgramsDirectory, "icons", "hicolor", "256x256", "apps", "lp100a-monitor.png");
+
+    /// <summary>
+    /// Convenience symlink so <c>lp100a-monitor</c> works from a terminal. <c>~/.local/bin</c> is
+    /// on PATH by default on Raspberry Pi OS and most desktop distributions.
+    /// </summary>
+    private static string SymlinkPath =>
+        Path.Combine(HomeDirectory, ".local", "bin", "lp100a-monitor");
 
     public static string InstallDirectory => InstallLayout.InstallDirectoryUnder(ProgramsDirectory);
 
@@ -116,15 +145,80 @@ public static class InstallService
             }
         }
 
+        // A copied executable arrives without its executable bit on Unix; without this the
+        // installed copy and the menu entry both silently fail to launch.
+        if (!OperatingSystem.IsWindows()) MakeExecutable(target);
+
         Register(target);
         return target;
     }
 
     /// <summary>
-    /// Write the installed-apps entry and Start Menu shortcut for the copy at
-    /// <paramref name="exePath"/>. Safe to call repeatedly — it overwrites rather than duplicating.
+    /// Register the copy at <paramref name="exePath"/> with the desktop environment: an
+    /// installed-apps entry and Start Menu shortcut on Windows, a <c>.desktop</c> entry, icon and
+    /// <c>~/.local/bin</c> symlink on Linux. Safe to call repeatedly — everything overwrites rather
+    /// than duplicating.
     /// </summary>
     public static void Register(string exePath)
+    {
+        if (OperatingSystem.IsWindows()) RegisterWindows(exePath);
+        else RegisterUnix(exePath);
+    }
+
+    private static void RegisterUnix(string exePath)
+    {
+        // Write the icon first: the entry should not reference a file that isn't there yet.
+        string? icon = null;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(IconFilePath)!);
+            using var src = Assembly.GetExecutingAssembly().GetManifestResourceStream("app-icon.png");
+            if (src is not null)
+            {
+                using var dst = File.Create(IconFilePath);
+                src.CopyTo(dst);
+                icon = IconFilePath;
+            }
+        }
+        catch (IOException) { /* an entry without an icon still launches */ }
+        catch (UnauthorizedAccessException) { }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(DesktopFilePath)!);
+        File.WriteAllText(DesktopFilePath, DesktopEntry.Build(
+            DisplayName,
+            exePath,
+            icon,
+            "Monitor for the TelePost LP-100A vector RF wattmeter"));
+
+        // Some environments only notice a new entry once the database is rebuilt; others watch the
+        // directory. Best effort, and harmless where the tool isn't installed.
+        Run("update-desktop-database", [Path.GetDirectoryName(DesktopFilePath)!]);
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SymlinkPath)!);
+            if (File.Exists(SymlinkPath) || Directory.Exists(SymlinkPath)) File.Delete(SymlinkPath);
+            File.CreateSymbolicLink(SymlinkPath, exePath);
+        }
+        catch (IOException) { /* the menu entry is the point; the symlink is a convenience */ }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private static void MakeExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        try
+        {
+            File.SetUnixFileMode(path,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private static void RegisterWindows(string exePath)
     {
         if (!OperatingSystem.IsWindows()) return;
 
@@ -158,18 +252,18 @@ public static class InstallService
     /// </summary>
     public static void EnsureRegistered()
     {
-        if (!OperatingSystem.IsWindows()) return;
         if (Mode != InstallMode.Installed) return;
         if (IsRegistered()) return;
         Register(ExePath);
     }
 
-    /// <summary>Whether an installed-apps entry currently exists.</summary>
-    public static bool IsRegistered()
-    {
-        if (!OperatingSystem.IsWindows()) return false;
-        return Run("reg.exe", ["query", UninstallKey, "/v", "DisplayName"]) == 0;
-    }
+    /// <summary>
+    /// Whether the desktop environment already knows about this copy — an installed-apps entry on
+    /// Windows, a <c>.desktop</c> file on Linux.
+    /// </summary>
+    public static bool IsRegistered() => OperatingSystem.IsWindows()
+        ? Run("reg.exe", ["query", UninstallKey, "/v", "DisplayName"]) == 0
+        : File.Exists(DesktopFilePath);
 
     /// <summary>
     /// Remove the Windows registrations, then hand off to a detached helper that deletes the
@@ -183,36 +277,64 @@ public static class InstallService
     /// </remarks>
     public static void Uninstall(UninstallOptions options)
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         Unregister();
 
+        // The install directory is private to the app on both platforms, so removing it whole is
+        // safe. It must never become a shared directory such as ~/.local/bin — see SymlinkPath,
+        // which is removed as a single file for exactly that reason.
         var toDelete = new List<string> { ExeDirectory };
         toDelete.AddRange(DataFilesToRemove(options));
 
         var pid = Environment.ProcessId;
-        var script = Path.Combine(Path.GetTempPath(), "lp100a-uninstall.ps1");
 
-        var lines = new List<string>
+        if (OperatingSystem.IsWindows())
         {
-            $"while (Get-Process -Id {pid} -ErrorAction SilentlyContinue) {{ Start-Sleep -Milliseconds 300 }}",
-        };
-        lines.AddRange(toDelete.Select(p =>
-            $"Remove-Item -LiteralPath '{p.Replace("'", "''")}' -Recurse -Force -ErrorAction SilentlyContinue"));
+            var script = Path.Combine(Path.GetTempPath(), "lp100a-uninstall.ps1");
+            var lines = new List<string>
+            {
+                $"while (Get-Process -Id {pid} -ErrorAction SilentlyContinue) {{ Start-Sleep -Milliseconds 300 }}",
+            };
+            lines.AddRange(toDelete.Select(p =>
+                $"Remove-Item -LiteralPath '{p.Replace("'", "''")}' -Recurse -Force -ErrorAction SilentlyContinue"));
+            // Take the helper with it, so an uninstall doesn't leave its own tooling behind in temp.
+            lines.Add($"Remove-Item -LiteralPath '{script.Replace("'", "''")}' -Force -ErrorAction SilentlyContinue");
 
-        // Take the helper with it, so an uninstall doesn't leave its own tooling behind in temp.
-        lines.Add($"Remove-Item -LiteralPath '{script.Replace("'", "''")}' -Force -ErrorAction SilentlyContinue");
-
-        File.WriteAllText(script, string.Join("\n", lines) + "\n");
-
-        Process.Start(new ProcessStartInfo
+            File.WriteAllText(script, string.Join("\n", lines) + "\n");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+        }
+        else
         {
-            FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\"",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        });
+            var script = Path.Combine(Path.GetTempPath(), "lp100a-uninstall.sh");
+            var lines = new List<string>
+            {
+                "#!/bin/sh",
+                $"while kill -0 {pid} 2>/dev/null; do sleep 0.3; done",
+            };
+            lines.AddRange(toDelete.Select(p => $"rm -rf {ShellQuote(p)}"));
+            lines.Add($"rm -f {ShellQuote(script)}");
+
+            File.WriteAllText(script, string.Join("\n", lines) + "\n");
+            MakeExecutable(script);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                ArgumentList = { script },
+                UseShellExecute = false,
+            });
+        }
     }
+
+    /// <summary>
+    /// Wrap a path in single quotes for /bin/sh, closing and reopening around any single quote it
+    /// contains. Paths come from the environment, so they are not assumed to be tame.
+    /// </summary>
+    private static string ShellQuote(string path) => "'" + path.Replace("'", "'\\''") + "'";
 
     /// <summary>
     /// Which files under the data directory an uninstall should take. The directory itself is never
@@ -243,13 +365,31 @@ public static class InstallService
 
     private static void Unregister()
     {
-        if (!OperatingSystem.IsWindows()) return;
-        Run("reg.exe", ["delete", UninstallKey, "/f"]);
+        if (OperatingSystem.IsWindows())
+        {
+            Run("reg.exe", ["delete", UninstallKey, "/f"]);
+            TryDelete(StartMenuShortcut);
+            return;
+        }
+
+        // Each removed as a single file. ~/.local/bin and the icon theme are shared directories:
+        // nothing here may delete a directory it does not own.
+        TryDelete(DesktopFilePath);
+        TryDelete(IconFilePath);
+        TryDelete(SymlinkPath);
+        Run("update-desktop-database", [Path.GetDirectoryName(DesktopFilePath)!]);
+    }
+
+    private static void TryDelete(string path)
+    {
         try
         {
-            if (File.Exists(StartMenuShortcut)) File.Delete(StartMenuShortcut);
+            // File.Exists follows symlinks, so a link whose target is already gone reports false;
+            // ask the link itself whether it is there.
+            if (File.Exists(path) || File.ResolveLinkTarget(path, returnFinalTarget: false) is not null)
+                File.Delete(path);
         }
-        catch (IOException) { /* a locked shortcut is not worth failing the uninstall over */ }
+        catch (IOException) { /* a locked or vanished file is not worth failing an uninstall over */ }
         catch (UnauthorizedAccessException) { }
     }
 

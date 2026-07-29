@@ -45,6 +45,13 @@ public static class InstallLayout
     public const string ProductFolder = "LP-100A Monitor";
 
     /// <summary>
+    /// Folder name on Linux, under <c>~/.local/share</c>. Lower-case and hyphenated to match XDG
+    /// convention, and — not incidentally — free of the space that would otherwise have to survive
+    /// quoting in the <c>.desktop</c> entry's <c>Exec</c> line.
+    /// </summary>
+    public const string ProductFolderUnix = "lp100a-monitor";
+
+    /// <summary>
     /// Directory names that earlier hand-installs left behind, relative to the per-user programs
     /// directory. Unzipping a release in Explorer creates a folder named after the zip, which is
     /// how copies ended up in <c>Lp100aMonitor-win-x64</c> before there was an installer. These are
@@ -128,15 +135,26 @@ public static class InstallLayout
     /// <c>%LOCALAPPDATA%\Programs</c> yields <c>%LOCALAPPDATA%\Programs\LP-100A Monitor</c>.
     /// </summary>
     public static string InstallDirectoryUnder(string programsDirectory) =>
-        Path.Combine(programsDirectory, ProductFolder);
+        InstallDirectoryUnder(programsDirectory, OperatingSystem.IsWindows());
+
+    /// <param name="windows">
+    /// Which naming convention to use. Passed explicitly rather than sniffed so the choice is
+    /// testable from either platform — cross-publishing means the build box and the target are
+    /// routinely not the same machine.
+    /// </param>
+    public static string InstallDirectoryUnder(string programsDirectory, bool windows) =>
+        Path.Combine(programsDirectory, windows ? ProductFolder : ProductFolderUnix);
 
     /// <summary>
     /// Directories to accept as already-installed beneath a per-user programs directory — the
     /// canonical one plus every <see cref="LegacyFolders"/> entry.
     /// </summary>
-    public static IEnumerable<string> InstalledDirectoriesUnder(string programsDirectory)
+    public static IEnumerable<string> InstalledDirectoriesUnder(string programsDirectory) =>
+        InstalledDirectoriesUnder(programsDirectory, OperatingSystem.IsWindows());
+
+    public static IEnumerable<string> InstalledDirectoriesUnder(string programsDirectory, bool windows)
     {
-        yield return InstallDirectoryUnder(programsDirectory);
+        yield return InstallDirectoryUnder(programsDirectory, windows);
         foreach (var legacy in LegacyFolders)
         {
             yield return Path.Combine(programsDirectory, legacy);

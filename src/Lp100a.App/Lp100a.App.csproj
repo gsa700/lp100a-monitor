@@ -24,6 +24,10 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
+    <!-- Also embedded plainly: the Linux installer writes this icon to the XDG icon directory for
+         the .desktop entry, and the install switch runs before Avalonia is initialised, so the
+         Avalonia asset loader isn't available to read it. ~29 KB. -->
+    <EmbeddedResource Include="Assets/app-icon.png" LogicalName="app-icon.png" />
   </ItemGroup>
 
   <ItemGroup>

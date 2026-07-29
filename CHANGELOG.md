@@ -13,6 +13,10 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
   appears in **Settings → Apps → Installed apps** so it can be removed the normal way. Per-user by
   necessity rather than preference — the in-app updater replaces the running executable, which
   needs no elevation there and would need it on every update under `Program Files`.
+- **The same on Linux and Raspberry Pi.** Installs to `~/.local/share/lp100a-monitor`, adds a
+  proper application-menu entry with an icon, and symlinks `~/.local/bin/lp100a-monitor` so it runs
+  from a terminal by name. No root, no `.deb`, no AppImage — and no more `chmod +x` and launching
+  from a terminal. *Published but not yet field-tested on Linux.*
 - **Portable mode.** Put a file named `portable.txt` beside the executable and the app runs where
   it stands, registers nothing, and stops offering to install — so a copy on a USB stick leaves no
   trace on the machine.

@@ -23,7 +23,20 @@ The build is self-contained — no .NET install required.
 - **Windows**: run `Lp100aMonitor.exe`.
 - **Linux / Raspberry Pi**: `chmod +x Lp100aMonitor` then `./Lp100aMonitor`.
 
-On first run, open **Setup**, pick the LP-100A's COM/serial port, and Connect. The
+On first run it offers to **install itself** — no separate installer to download. It copies
+itself to your user profile (`%LOCALAPPDATA%\Programs` on Windows, `~/.local/share` on Linux),
+adds a Start Menu or application-menu entry, and on Windows appears in **Settings → Apps →
+Installed apps** so you can remove it the usual way. Nothing needs administrator or root.
+
+Prefer to run it from a USB stick, or on a machine you'd rather not install on? Put a file named
+`portable.txt` beside the program. It then runs where it stands, registers nothing, and stops
+asking. Delete that file if you later want it to install normally.
+
+To remove it: Windows, use **Installed apps**; Linux, run `lp100a-monitor --uninstall`. It asks
+about your settings and your transmission log **separately**, and keeps both unless you say
+otherwise — the log is your operating history and can't be recovered.
+
+Then open **Setup**, pick the LP-100A's COM/serial port, and Connect. The
 app pins that adapter by its chip serial and **auto-connects** next time. Keep the
 meter on its **Watts screen** so power and vector data come across the serial link.
 

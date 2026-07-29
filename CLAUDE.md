@@ -98,7 +98,7 @@ win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must
 updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
 
-## Self-install (Windows done; Linux is phase 2)
+## Self-install (Windows and Linux)
 
 Modelled on NTP Time Sync rather than on an installer framework: no Inno/WiX/MSI, no new
 toolchain. The app installs *itself*.
@@ -130,9 +130,27 @@ command-line switch deletes the log** — only a person answering that prompt, s
 or the installed-apps entry carries can destroy operating history. This mirrors the rule
 `TxLogWriter` already follows: archive aside, never delete.
 
-Phase 2 (Linux/Pi) reuses the same detection and reduces to path selection plus a `.desktop` file
-and icon under the XDG per-user paths — no root, no `.deb`, no AppImage. That is where the bigger
-usability win is: the Pi story today is `chmod +x` and a terminal.
+**Linux/Pi uses the same detection**, differing only in paths and in what "register" means:
+`~/.local/share/lp100a-monitor/` for the binary (lower-case and hyphenated per XDG — and free of the
+space that would otherwise have to survive `.desktop` quoting), a `.desktop` entry in
+`~/.local/share/applications`, the 256px icon written to the hicolor theme, and a
+`~/.local/bin/lp100a-monitor` symlink for terminal use. No root, no `.deb`, no AppImage. A copied
+binary also gets its executable bit set — without it the menu entry silently does nothing.
+
+`DesktopEntry` (Core, pure, 12 tests) builds the entry, including the spec's `Exec` quoting rules.
+It is tested rather than eyeballed because the failure mode is a menu item that quietly does
+nothing rather than an error anybody sees.
+
+**Uninstall removes shared-directory items file by file.** The install directory is private and can
+go recursively, but `~/.local/bin`, the icon theme and `~/.local/share/applications` all belong to
+the system — nothing may delete a directory it does not own. Getting this wrong on Linux means
+deleting every user binary on the machine, so keep new removals in `Unregister`'s file-at-a-time
+form.
+
+> **Linux is unverified on hardware.** It compiles, publishes for linux-x64/arm64, and its pure
+> logic is unit-tested, but no part of the filesystem work — icon extraction, `.desktop` write,
+> symlink, `chmod`, the `sh` uninstall trampoline — has run on a real Linux box. The CM5 is the
+> place to find out. The Windows path is verified end to end.
 
 ## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
