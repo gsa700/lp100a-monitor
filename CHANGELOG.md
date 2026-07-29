@@ -5,6 +5,22 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.18-beta] - 2026-07-28
+
+### Fixed
+- **Installing made the folder you installed from undeletable.** The install finished, the app
+  started, and the download folder then refused to be deleted for as long as the app was running,
+  saying it was in use — with nothing on screen connecting the two. The installed copy was being
+  started without a working directory of its own, so it inherited the one it was launched from, and
+  Windows will not delete a folder that a running program is sitting in. It now starts in its own
+  install folder, and the copy you installed from can be deleted straight away.
+- **An install could quietly fail to appear in Installed apps.** The program installed and ran
+  normally, but never showed up under Settings → Apps → Installed apps — removing the ordinary way
+  to uninstall it — and reported success regardless. The registration is now checked after it is
+  written and retried once, and an install that still cannot register says so plainly instead of
+  claiming to have worked. Note the underlying cause was not identified; starting the app again has
+  always re-registered it, and still does.
+
 ## [0.9.17-beta] - 2026-07-28
 
 ### Added
