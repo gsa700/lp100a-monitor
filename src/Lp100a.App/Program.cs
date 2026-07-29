@@ -40,7 +40,10 @@ internal static class Program
                 // Installing needs no UI: copy, register, and hand off to the installed copy.
                 case InstallAction.Install:
                     var installed = InstallService.Install();
-                    if (!request.Quiet) InstallService.LaunchDetached(installed);
+                    if (!request.Quiet) InstallService.LaunchDetached(installed.ExePath);
+                    // The program is installed either way, so this is not a failure — but a script
+                    // that cares whether the app is removable can tell the difference.
+                    if (!installed.Registered) Environment.ExitCode = 2;
                     return;
 
                 // An unattended uninstall has nobody to ask, so it takes only the program. Note

@@ -167,7 +167,20 @@ public partial class App : Application
         try
         {
             var installed = InstallService.Install();
-            InstallService.LaunchDetached(installed);
+
+            // Installed but not listed is a real outcome, not a detail: the program works, yet the
+            // usual way to remove it is missing. Say so here rather than report a clean install and
+            // leave it to be discovered later in Settings.
+            if (!installed.Registered)
+            {
+                await ConfirmDialog.ShowNoticeAsync(_mainWindow, "Installed, with one problem",
+                    $"LP-100A Monitor is installed in {InstallService.InstallDirectory} and will run "
+                    + "normally, but it could not add itself to Settings → Apps → Installed apps.",
+                    detail: "Starting the installed copy again usually adds the entry. Failing that, "
+                          + "run it once with --install from a command prompt.");
+            }
+
+            InstallService.LaunchDetached(installed.ExePath);
             // Closing runs the normal save path on purpose, so settings carry over to the
             // installed copy, which reads the same per-user data directory.
             _mainWindow.Close();

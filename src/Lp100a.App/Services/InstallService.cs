@@ -18,6 +18,16 @@ namespace Lp100a.App.Services;
 /// </param>
 public readonly record struct UninstallOptions(bool RemoveSettings, bool RemoveLogs);
 
+/// <summary>Outcome of an install.</summary>
+/// <param name="ExePath">The installed executable.</param>
+/// <param name="Registered">
+/// Whether the desktop registration is verifiably in place. The install itself succeeded either
+/// way — the program is copied and runs — but when this is false it will not appear in Settings →
+/// Apps → Installed apps, which is the only route most people have to uninstall it. Worth telling
+/// the user about rather than reporting a clean install.
+/// </param>
+public readonly record struct InstallResult(string ExePath, bool Registered);
+
 /// <summary>
 /// An install could not proceed for a reason the user can act on — almost always because the
 /// installed copy is still running. Carries a message meant to be shown as-is.
@@ -118,7 +128,7 @@ public static class InstallService
     /// log already live in <see cref="AppConfig.DataDir"/>, so an install picks up whatever was
     /// there before and an uninstall can leave it behind.
     /// </remarks>
-    public static string Install()
+    public static InstallResult Install()
     {
         Directory.CreateDirectory(InstallDirectory);
 
@@ -149,8 +159,7 @@ public static class InstallService
         // installed copy and the menu entry both silently fail to launch.
         if (!OperatingSystem.IsWindows()) MakeExecutable(target);
 
-        Register(target);
-        return target;
+        return new InstallResult(target, Register(target));
     }
 
     /// <summary>
@@ -159,13 +168,13 @@ public static class InstallService
     /// <c>~/.local/bin</c> symlink on Linux. Safe to call repeatedly — everything overwrites rather
     /// than duplicating.
     /// </summary>
-    public static void Register(string exePath)
-    {
-        if (OperatingSystem.IsWindows()) RegisterWindows(exePath);
-        else RegisterUnix(exePath);
-    }
+    /// <returns>Whether the registration is verifiably in place afterwards.</returns>
+    public static bool Register(string exePath) =>
+        OperatingSystem.IsWindows() ? RegisterWindows(exePath) : RegisterUnix(exePath);
 
-    private static void RegisterUnix(string exePath)
+    /// <returns>Whether the desktop entry is on disk afterwards — the icon and the
+    /// <c>~/.local/bin</c> symlink are conveniences, but without the entry there is no menu item.</returns>
+    private static bool RegisterUnix(string exePath)
     {
         // Write the icon first: the entry should not reference a file that isn't there yet.
         string? icon = null;
@@ -202,6 +211,8 @@ public static class InstallService
         }
         catch (IOException) { /* the menu entry is the point; the symlink is a convenience */ }
         catch (UnauthorizedAccessException) { }
+
+        return File.Exists(DesktopFilePath);
     }
 
     private static void MakeExecutable(string path)
@@ -218,31 +229,59 @@ public static class InstallService
         catch (UnauthorizedAccessException) { }
     }
 
-    private static void RegisterWindows(string exePath)
+    /// <summary>
+    /// Write the installed-apps entry and the Start Menu shortcut. Returns whether the entry is
+    /// really there afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Verified and retried rather than written once and assumed, because this failed in the field
+    /// and left no trace: every value goes through a separate reg.exe, and a spawn that does not
+    /// take produces no error, no log line and no visible difference from success. The install
+    /// still copied the program, still made the shortcut, and still launched -- it simply did not
+    /// appear in Settings → Apps → Installed apps, which is the one route a user has to remove it.
+    /// The transient cause was never identified; this makes the outcome checked either way.
+    /// </remarks>
+    private static bool RegisterWindows(string exePath)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows()) return false;
 
         var dir = Path.GetDirectoryName(exePath)!;
+
+        var wrote = WriteUninstallEntry(exePath, dir);
+        if (!wrote || !IsRegistered())
+        {
+            Thread.Sleep(250);
+            wrote = WriteUninstallEntry(exePath, dir);
+        }
+
+        CreateShortcut(StartMenuShortcut, exePath, dir, "Monitor for the TelePost LP-100A wattmeter");
+
+        return wrote && IsRegistered();
+    }
+
+    /// <summary>Write every value of the installed-apps entry. False if any single write failed.</summary>
+    private static bool WriteUninstallEntry(string exePath, string dir)
+    {
         var version = UpdateService.CurrentVersion;
         var sizeKb = FileSizeKb(exePath);
 
-        RegSet(UninstallKey, "DisplayName", DisplayName);
-        RegSet(UninstallKey, "DisplayVersion", version);
-        RegSet(UninstallKey, "Publisher", "David Erickson (AB0R)");
-        RegSet(UninstallKey, "DisplayIcon", exePath);
-        RegSet(UninstallKey, "InstallLocation", dir);
-        RegSet(UninstallKey, "URLInfoAbout", $"https://github.com/{UpdateService.Repo}");
+        var ok = RegSet(UninstallKey, "DisplayName", DisplayName);
+        ok &= RegSet(UninstallKey, "DisplayVersion", version);
+        ok &= RegSet(UninstallKey, "Publisher", "David Erickson (AB0R)");
+        ok &= RegSet(UninstallKey, "DisplayIcon", exePath);
+        ok &= RegSet(UninstallKey, "InstallLocation", dir);
+        ok &= RegSet(UninstallKey, "URLInfoAbout", $"https://github.com/{UpdateService.Repo}");
 
         // Windows gives the user no way to answer a dialog it did not expect, so the entry's own
         // button runs the quiet path — which keeps the data directory.
-        RegSet(UninstallKey, "UninstallString", $"\"{exePath}\" --uninstall");
-        RegSet(UninstallKey, "QuietUninstallString", $"\"{exePath}\" --uninstall --quiet");
+        ok &= RegSet(UninstallKey, "UninstallString", $"\"{exePath}\" --uninstall");
+        ok &= RegSet(UninstallKey, "QuietUninstallString", $"\"{exePath}\" --uninstall --quiet");
 
-        RegSet(UninstallKey, "NoModify", "1", "REG_DWORD");
-        RegSet(UninstallKey, "NoRepair", "1", "REG_DWORD");
-        if (sizeKb > 0) RegSet(UninstallKey, "EstimatedSize", sizeKb.ToString(), "REG_DWORD");
+        ok &= RegSet(UninstallKey, "NoModify", "1", "REG_DWORD");
+        ok &= RegSet(UninstallKey, "NoRepair", "1", "REG_DWORD");
+        if (sizeKb > 0) ok &= RegSet(UninstallKey, "EstimatedSize", sizeKb.ToString(), "REG_DWORD");
 
-        CreateShortcut(StartMenuShortcut, exePath, dir, "Monitor for the TelePost LP-100A wattmeter");
+        return ok;
     }
 
     /// <summary>
@@ -394,8 +433,20 @@ public static class InstallService
     }
 
     /// <summary>Launch a copy of the app detached from this process.</summary>
+    /// <remarks>
+    /// The working directory is set explicitly, and must stay that way. A child process otherwise
+    /// inherits this one's, and after an install that is the folder the user just installed FROM --
+    /// which Windows then refuses to delete, because a live process's current directory cannot be
+    /// removed. The install appears to finish and the download folder becomes undeletable for as
+    /// long as the app runs, with nothing on screen connecting the two.
+    /// </remarks>
     public static void LaunchDetached(string exePath) =>
-        Process.Start(new ProcessStartInfo { FileName = exePath, UseShellExecute = true });
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = exePath,
+            WorkingDirectory = Path.GetDirectoryName(exePath)!,
+            UseShellExecute = true,
+        });
 
     private static int FileSizeKb(string path)
     {
@@ -404,8 +455,15 @@ public static class InstallService
         catch (UnauthorizedAccessException) { return 0; }
     }
 
-    private static void RegSet(string key, string name, string value, string type = "REG_SZ") =>
-        Run("reg.exe", ["add", key, "/v", name, "/t", type, "/d", value, "/f"]);
+    /// <summary>
+    /// Absolute path to reg.exe. Resolving it by bare name defers to the process's PATH, which is
+    /// one more thing that can differ between the contexts this runs in for no good reason.
+    /// </summary>
+    private static string RegExe => Path.Combine(Environment.SystemDirectory, "reg.exe");
+
+    /// <summary>Write one value, reporting whether reg.exe actually said it worked.</summary>
+    private static bool RegSet(string key, string name, string value, string type = "REG_SZ") =>
+        Run(RegExe, ["add", key, "/v", name, "/t", type, "/d", value, "/f"]) == 0;
 
     /// <summary>Run a console tool with no window and return its exit code (-1 if it wouldn't start).</summary>
     private static int Run(string fileName, IEnumerable<string> arguments)
