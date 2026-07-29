@@ -98,6 +98,42 @@ win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must
 updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
 
+## Self-install (Windows done; Linux is phase 2)
+
+Modelled on NTP Time Sync rather than on an installer framework: no Inno/WiX/MSI, no new
+toolchain. The app installs *itself*.
+
+**Per-user is a constraint, not a preference.** `UpdateService.ApplyAndRestart` replaces the
+running executable in place, which needs no elevation under `%LOCALAPPDATA%\Programs` and would
+need it on every update under `Program Files`. A machine-wide installer would quietly break the
+updater. Don't "fix" the install location without re-reading that method.
+
+**Location is the mode.** `InstallLayout.Detect` (Core, pure, tested) returns Installed / Portable /
+Loose from the executable's directory plus the presence of a `portable.txt` marker. Nothing is
+written anywhere that could disagree with where the file actually is. The marker wins over
+everything, including the install directory — one unambiguous way to say "touch nothing".
+
+**Pre-installer copies are adopted, not re-installed.** Unzipping in Explorer produced folders like
+`Lp100aMonitor-win-x64`; `InstallLayout.LegacyFolders` treats those as installed where they stand
+so upgrading doesn't leave an orphaned second copy.
+
+**Registry goes through `reg.exe`, deliberately.** Add/Remove Programs needs HKCU writes, but the
+app targets plain `net10.0` so it can cross-publish Linux and Pi builds from one TFM, and the
+registry APIs only ship in `net10.0-windows`. The standalone package is deprecated at 5.0.0.
+Arguments go via `ProcessStartInfo.ArgumentList`, so paths with spaces need no hand-quoting.
+If the TFM ever gains a `-windows` variant, this is the first thing worth revisiting.
+
+**The transmission log is not app data.** `ConfigStore.DataDir` holds `config.json` *and*
+`TXlog.csv` plus its archives. Uninstall asks about them separately, both defaulting to keep, and
+the log prompt states how many transmissions are at stake rather than naming a file. **No
+command-line switch deletes the log** — only a person answering that prompt, so nothing a shortcut
+or the installed-apps entry carries can destroy operating history. This mirrors the rule
+`TxLogWriter` already follows: archive aside, never delete.
+
+Phase 2 (Linux/Pi) reuses the same detection and reduces to path selection plus a `.desktop` file
+and icon under the XDG per-user paths — no root, no `.deb`, no AppImage. That is where the bigger
+usability win is: the Pi story today is `chmod +x` and a terminal.
+
 ## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
 Both done, deliberately as two commits so a regression points at one culprit rather than two.

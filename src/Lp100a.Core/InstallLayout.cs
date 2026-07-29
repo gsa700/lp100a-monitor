@@ -1,0 +1,145 @@
+namespace Lp100a.Core;
+
+/// <summary>How this copy of the app is running, decided entirely by where its executable sits.</summary>
+public enum InstallMode
+{
+    /// <summary>
+    /// Running from the per-user install directory. Listed in the OS's installed-apps list and
+    /// updatable in place.
+    /// </summary>
+    Installed,
+
+    /// <summary>
+    /// A portable marker file sits beside the executable. Runs where it stands and registers
+    /// nothing with the OS, so a copy on a USB stick leaves no trace on the machine.
+    /// </summary>
+    Portable,
+
+    /// <summary>
+    /// Anywhere else — typically a freshly unzipped download in Downloads. Offers to install
+    /// itself on first run.
+    /// </summary>
+    Loose,
+}
+
+/// <summary>
+/// Works out how a copy of the app is installed from nothing but its path. Deliberately pure: it
+/// takes the directories and the marker's presence as arguments rather than reading the disk, so
+/// every combination is testable without creating files or touching the registry. The App layer
+/// supplies the real paths and performs the side effects.
+///
+/// Location IS the mode — there is no "installed" flag written anywhere to disagree with reality.
+/// Copy an installed exe to the desktop and it becomes <see cref="InstallMode.Loose"/>; that is the
+/// intended behaviour, not an edge case.
+/// </summary>
+public static class InstallLayout
+{
+    /// <summary>Marker filename that pins a copy to <see cref="InstallMode.Portable"/>.</summary>
+    public const string PortableMarker = "portable.txt";
+
+    /// <summary>
+    /// Folder name under the per-user programs directory, e.g.
+    /// <c>%LOCALAPPDATA%\Programs\LP-100A Monitor</c>. Human-readable rather than RID-suffixed,
+    /// matching the convention the other station tools use.
+    /// </summary>
+    public const string ProductFolder = "LP-100A Monitor";
+
+    /// <summary>
+    /// Directory names that earlier hand-installs left behind, relative to the per-user programs
+    /// directory. Unzipping a release in Explorer creates a folder named after the zip, which is
+    /// how copies ended up in <c>Lp100aMonitor-win-x64</c> before there was an installer. These are
+    /// treated as installed <em>in place</em> rather than as strays to be re-installed elsewhere —
+    /// adopting them avoids leaving an orphaned second copy behind on upgrade.
+    /// </summary>
+    public static readonly string[] LegacyFolders =
+    [
+        "Lp100aMonitor",
+        "Lp100aMonitor-win-x64",
+        "Lp100aMonitor-linux-x64",
+        "Lp100aMonitor-linux-arm64",
+    ];
+
+    /// <summary>
+    /// Path comparison appropriate to the running OS. Windows paths are case-insensitive; Linux
+    /// paths are not, and treating them as if they were would let <c>~/Apps</c> masquerade as
+    /// <c>~/apps</c>.
+    /// </summary>
+    public static StringComparison PathComparison =>
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    /// <summary>
+    /// Compare two directory paths for equality, ignoring a trailing separator and (on Windows)
+    /// case. Does not touch the filesystem, so it works for paths that don't exist.
+    /// </summary>
+    public static bool SamePath(string? a, string? b, StringComparison? comparison = null)
+    {
+        if (a is null || b is null) return false;
+        return string.Equals(Normalize(a), Normalize(b), comparison ?? PathComparison);
+    }
+
+    private static string Normalize(string path) =>
+        path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            .TrimEnd(Path.DirectorySeparatorChar);
+
+    /// <summary>
+    /// Decide the mode for an executable living in <paramref name="exeDirectory"/>.
+    /// </summary>
+    /// <param name="exeDirectory">Directory holding the running executable.</param>
+    /// <param name="portableMarkerPresent">
+    /// Whether <see cref="PortableMarker"/> sits in that directory. Checked by the caller so this
+    /// stays filesystem-free.
+    /// </param>
+    /// <param name="installDirectory">The canonical per-user install directory.</param>
+    /// <param name="alsoInstalled">
+    /// Additional directories to accept as installed — see <see cref="LegacyFolders"/>. Null or
+    /// empty is fine.
+    /// </param>
+    /// <param name="comparison">Override the path comparison; defaults to <see cref="PathComparison"/>.</param>
+    /// <remarks>
+    /// The portable marker wins over everything, including the install directory. That is
+    /// deliberate: it gives you one unambiguous way to say "don't touch this machine" that works
+    /// no matter where the copy happens to sit, and it can't be defeated by putting the file
+    /// somewhere the app also recognises.
+    /// </remarks>
+    public static InstallMode Detect(
+        string exeDirectory,
+        bool portableMarkerPresent,
+        string installDirectory,
+        IEnumerable<string>? alsoInstalled = null,
+        StringComparison? comparison = null)
+    {
+        if (portableMarkerPresent) return InstallMode.Portable;
+
+        if (SamePath(exeDirectory, installDirectory, comparison)) return InstallMode.Installed;
+
+        if (alsoInstalled is not null)
+        {
+            foreach (var dir in alsoInstalled)
+            {
+                if (SamePath(exeDirectory, dir, comparison)) return InstallMode.Installed;
+            }
+        }
+
+        return InstallMode.Loose;
+    }
+
+    /// <summary>
+    /// The canonical install directory beneath a per-user programs directory, e.g. passing
+    /// <c>%LOCALAPPDATA%\Programs</c> yields <c>%LOCALAPPDATA%\Programs\LP-100A Monitor</c>.
+    /// </summary>
+    public static string InstallDirectoryUnder(string programsDirectory) =>
+        Path.Combine(programsDirectory, ProductFolder);
+
+    /// <summary>
+    /// Directories to accept as already-installed beneath a per-user programs directory — the
+    /// canonical one plus every <see cref="LegacyFolders"/> entry.
+    /// </summary>
+    public static IEnumerable<string> InstalledDirectoriesUnder(string programsDirectory)
+    {
+        yield return InstallDirectoryUnder(programsDirectory);
+        foreach (var legacy in LegacyFolders)
+        {
+            yield return Path.Combine(programsDirectory, legacy);
+        }
+    }
+}

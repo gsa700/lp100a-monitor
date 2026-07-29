@@ -5,6 +5,29 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [Unreleased]
+
+### Added
+- **The app installs itself on Windows.** Run a freshly unzipped copy and it offers to install:
+  it copies itself to `%LOCALAPPDATA%\Programs\LP-100A Monitor`, adds a Start Menu shortcut, and
+  appears in **Settings → Apps → Installed apps** so it can be removed the normal way. Per-user by
+  necessity rather than preference — the in-app updater replaces the running executable, which
+  needs no elevation there and would need it on every update under `Program Files`.
+- **Portable mode.** Put a file named `portable.txt` beside the executable and the app runs where
+  it stands, registers nothing, and stops offering to install — so a copy on a USB stick leaves no
+  trace on the machine.
+- **Silent `--install` and `--uninstall`** (with `--quiet`) for unattended use. The installed-apps
+  entry uses them.
+- Copies installed by hand before there was an installer are adopted where they stand, so they
+  appear in Installed apps without being copied to a second location.
+
+### Changed
+- Uninstalling asks about settings and the transmission log **separately**, and both default to
+  being kept. They share a directory but not their stakes: settings are recreated by reconfiguring,
+  while the log is operating history that nothing can bring back. The prompt says how many
+  transmissions are at risk rather than naming a file. No command-line switch can delete the log —
+  only a person answering that prompt.
+
 ## [0.9.16-beta] - 2026-07-28
 
 ### Changed

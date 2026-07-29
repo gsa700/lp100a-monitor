@@ -8,6 +8,7 @@ using Lp100a.App.Services;
 using Lp100a.App.Settings;
 using Lp100a.App.ViewModels;
 using Lp100a.App.Views;
+using Lp100a.Core;
 
 namespace Lp100a.App;
 
@@ -29,6 +30,9 @@ public partial class App : Application
     private LogWindow? _logWindow;
 
     public bool IsExiting { get; private set; }
+
+    /// <summary>An uninstall is in flight; don't write settings back out on the way down.</summary>
+    private bool _uninstalling;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -53,10 +57,16 @@ public partial class App : Application
             };
             _vectorVm = new VectorViewModel(_meter);
 
+            // A copy installed by hand before there was an installer is adopted where it stands,
+            // so it appears in Installed apps without being copied to a second location.
+            try { InstallService.EnsureRegistered(); } catch { /* never block startup over this */ }
+
             // Follow the cable by its chip serial across COM renumbering, then auto-connect.
             var startupPort = PortIdentity.ResolvePort(_config.Port, _config.Serial);
             _setupVm.SelectPort(startupPort);
-            if (startupPort is not null && MeterService.GetPortNames().Contains(startupPort))
+            // Don't take the serial port for a run that exists only to uninstall.
+            if (!Program.PendingUninstall
+                && startupPort is not null && MeterService.GetPortNames().Contains(startupPort))
                 _meter.Connect(startupPort);
 
             _mainWindow = new MainWindow { DataContext = new MainWindowViewModel(_meter, _display) };
@@ -70,7 +80,18 @@ public partial class App : Application
             // Reopen a persisted Vector window only after main is shown (an owned window needs a visible owner).
             _mainWindow.Opened += async (_, _) =>
             {
+                // This run exists only to uninstall: ask, act, and go. Nothing else should start.
+                if (Program.PendingUninstall)
+                {
+                    await RunUninstallAsync();
+                    return;
+                }
+
                 if (_display.ShowVectorWindow) EnsureVectorVisible();
+
+                // A copy running from wherever it was unzipped offers to install itself.
+                if (InstallService.Mode == InstallMode.Loose && await OfferInstallAsync()) return;
+
                 if (_config.CheckUpdatesAtStartup)
                 {
                     await _setupVm.CheckUpdatesAsync();
@@ -122,6 +143,118 @@ public partial class App : Application
 
     /// <summary>Close the app so the staged update helper can swap the executable and relaunch.</summary>
     public void ExitForUpdate() => _mainWindow.Close();
+
+    /// <summary>
+    /// Offer to install a loose copy. Returns true if the app is handing over to the installed
+    /// copy and the caller should stop starting things up.
+    /// </summary>
+    private async Task<bool> OfferInstallAsync()
+    {
+        var accepted = await ConfirmDialog.ShowAsync(
+            _mainWindow,
+            "Install LP-100A Monitor",
+            "Install LP-100A Monitor on this computer?",
+            affirmative: "Install",
+            negative: "Not now",
+            detail: $"Copies the program to {InstallService.InstallDirectory} and lists it in "
+                  + "Settings → Apps → Installed apps, with a Start Menu shortcut. Your settings and "
+                  + "transmission log are untouched either way.\n\n"
+                  + $"To run from here permanently without being asked again, put a file named "
+                  + $"{InstallLayout.PortableMarker} beside the program.");
+
+        if (!accepted) return false;
+
+        try
+        {
+            var installed = InstallService.Install();
+            InstallService.LaunchDetached(installed);
+            // Closing runs the normal save path on purpose, so settings carry over to the
+            // installed copy, which reads the same per-user data directory.
+            _mainWindow.Close();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.ShowNoticeAsync(_mainWindow, "Install failed",
+                "LP-100A Monitor could not install itself.", detail: ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Interactive uninstall. Settings and the transmission log are asked about separately, and
+    /// both default to being kept: they share a directory but not their stakes, and the log is
+    /// operating history that nothing can bring back.
+    /// </summary>
+    private async Task RunUninstallAsync()
+    {
+        var confirmed = await ConfirmDialog.ShowAsync(
+            _mainWindow,
+            "Uninstall LP-100A Monitor",
+            "Remove LP-100A Monitor from this computer?",
+            affirmative: "Uninstall",
+            negative: "Cancel",
+            detail: $"Deletes the program from {InstallService.ExeDirectory} and removes its "
+                  + "Start Menu shortcut and Installed apps entry.");
+
+        if (!confirmed)
+        {
+            _mainWindow.Close();
+            return;
+        }
+
+        var removeSettings = await ConfirmDialog.ShowAsync(
+            _mainWindow,
+            "Settings",
+            "Also delete your settings?",
+            affirmative: "Delete settings",
+            negative: "Keep settings",
+            detail: "Serial port, display rows, alarm thresholds and window positions. Keeping them "
+                  + "means a later reinstall picks up exactly where you left off.");
+
+        var removeLogs = await ConfirmDialog.ShowAsync(
+            _mainWindow,
+            "Transmission log",
+            "Also delete your transmission log?",
+            affirmative: "Delete the log",
+            negative: "Keep the log",
+            detail: TransmissionLogWarning(),
+            danger: true);
+
+        _uninstalling = true;
+        InstallService.Uninstall(new UninstallOptions(removeSettings, removeLogs));
+        _mainWindow.Close();
+    }
+
+    /// <summary>
+    /// Spell out what deleting the log actually costs, in overs rather than in filenames — "1,284
+    /// transmissions" is a decision someone can make; "TXlog.csv" is not.
+    /// </summary>
+    private static string TransmissionLogWarning()
+    {
+        var where = ConfigStore.DataDir;
+        var count = CountLoggedOvers();
+        var what = count > 0
+            ? $"This is your record of {count:N0} transmission{(count == 1 ? "" : "s")} — frequency, "
+            + "power, SWR and impedance for every over you have logged."
+            : "This is your record of every over you have logged.";
+
+        return what + " It cannot be recovered, and it is what the planned impedance-signature "
+             + $"analysis is built on.\n\nKeeping it leaves the files in {where}, where a later "
+             + "install will find them again.";
+    }
+
+    private static int CountLoggedOvers()
+    {
+        try
+        {
+            var path = ConfigStore.LogFilePath;
+            if (!File.Exists(path)) return 0;
+            // Rows minus the header; blank trailing lines don't count.
+            return Math.Max(0, File.ReadLines(path).Count(l => !string.IsNullOrWhiteSpace(l)) - 1);
+        }
+        catch { return 0; }
+    }
 
     /// <summary>A child window is closing; capture its bounds and drop the reference.</summary>
     public void NotifySetupClosing(SetupWindow w)
@@ -237,6 +370,17 @@ public partial class App : Application
     {
         if (IsExiting) return;   // main.Closing fires once; guard against re-entry
         IsExiting = true;
+
+        // An uninstall must not write config.json back out on its way down — the user may have
+        // just asked for it to be deleted, and recreating it here would undo that answer.
+        if (_uninstalling)
+        {
+            _logging.Dispose();
+            _frequency.Dispose();
+            _meter.Dispose();
+            return;
+        }
+
         try
         {
             _config.X = _mainWindow.Position.X;
