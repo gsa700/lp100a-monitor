@@ -162,6 +162,44 @@ form.
 > symlink, `chmod`, the `sh` uninstall trampoline — has run on a real Linux box. The CM5 is the
 > place to find out. The Windows path is verified end to end.
 
+## Queued: three fixes to port back from W2 Monitor (noted 2026-07-30)
+
+The W2 port took this app's installer and tabbed Setup and hit three things worth bringing back. All
+three are **open here**; nothing below has been applied to this repo. Reference implementations are in
+`~/Documents/Programming/w2-monitor-x` (`src/W2.App/Services/InstallService.cs`, `src/W2.Core/RegFile.cs`).
+
+1. **`Uninstall` deletes `ExeDirectory` unconditionally — guard it to `Mode == InstallMode.Installed`.**
+   The install directory is the app's own and can go recursively, but a copy being *run* from a
+   download folder is `Loose` and its directory is not ours. If someone extracted the exe straight
+   into `Downloads`, `ExeDirectory` **is** `Downloads`, and clicking uninstall would recursively delete
+   it. The W2 version adds the directory to the delete list only when the copy is `Installed`, and its
+   test confirms an uninstall run from a loose copy leaves the folder and an unrelated file in it
+   untouched. Highest priority of the three: it's the only one that can destroy someone's data.
+
+2. **Re-assert the registration on every launch, and write it as one `reg import`.** After a clean
+   install of W2 0.6.0-beta the installed-apps entry was written correctly and then went missing;
+   cause never identified, and nothing noticed because `EnsureRegistered` checks once at startup and
+   the freshly installed copy is launched immediately after a *successful* registration — so it saw a
+   good entry and skipped for the rest of its life. Two parts: drop the `IsRegistered()` early-out so
+   registration is re-asserted each start, and replace the eleven per-value `reg add` spawns with a
+   single `reg import` of a generated `.reg` file (`RegFile` in W2's Core, pure, 10 tests). One
+   invocation is cheap enough to repeat, and it's one action for a security product to allow or block
+   rather than eleven independent ones. `RegisterUnix` should likewise skip the steps whose result is
+   already correct, so `update-desktop-database` isn't spawned unless the entry's contents changed.
+   This is the same class of silent failure already described in `RegisterWindows`'s remarks here.
+
+3. **Opening Setup because of an update should select the Updates tab.** Right now
+   `SelectedTabIndex` is restored from `_config.SetupTab`, so when startup finds an update and calls
+   `ShowSetup()`, the window appears on whatever tab was last used — with nothing on screen saying why
+   it opened. W2 gives `ShowSetup` an optional tab argument and passes the Updates index on that path,
+   while still restoring the remembered tab everywhere else. Cosmetic, but it's the difference between
+   a window that explains itself and one that doesn't.
+
+Also worth knowing, though it needs no change here: **`APPDATA` does not isolate config on Windows.**
+.NET resolves `SpecialFolder.ApplicationData` through the known-folder API and ignores the environment
+variable, so redirecting it before a smoke test protects nothing. Force-kill the test instance instead,
+so it never reaches save-on-exit. `HOME`/`XDG_CONFIG_HOME` on Linux do work.
+
 ## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
 Both done, deliberately as two commits so a regression points at one culprit rather than two.
