@@ -28,9 +28,10 @@ itself to your user profile (`%LOCALAPPDATA%\Programs` on Windows, `~/.local/sha
 adds a Start Menu or application-menu entry, and on Windows appears in **Settings → Apps →
 Installed apps** so you can remove it the usual way. Nothing needs administrator or root.
 
-Prefer to run it from a USB stick, or on a machine you'd rather not install on? Put a file named
-`portable.txt` beside the program. It then runs where it stands, registers nothing, and stops
-asking. Delete that file if you later want it to install normally.
+Don't want it installed? Put a file named `portable.txt` beside the program. It then runs where it
+stands, registers nothing, and stops asking. Your settings and transmission log still live in your
+user profile either way, so this is a way to skip installing rather than a leave-no-trace mode.
+Delete that file if you later want it to install normally.
 
 To remove it: Windows, use **Installed apps**; Linux, run `lp100a-monitor --uninstall`. It asks
 about your settings and your transmission log **separately**, and keeps both unless you say

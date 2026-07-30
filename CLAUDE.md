@@ -111,7 +111,17 @@ updater. Don't "fix" the install location without re-reading that method.
 **Location is the mode.** `InstallLayout.Detect` (Core, pure, tested) returns Installed / Portable /
 Loose from the executable's directory plus the presence of a `portable.txt` marker. Nothing is
 written anywhere that could disagree with where the file actually is. The marker wins over
-everything, including the install directory — one unambiguous way to say "touch nothing".
+everything, including the install directory — one unambiguous way to say "don't install this".
+
+**Portable is not data-portable, and finishing that job has an ordering trap.** `Portable` only
+suppresses installing and registering; `ConfigStore.DataDir` ignores the mode entirely, so config
+and `TXlog.csv` stay in the user profile. Decided 2026-07-28: the LP-100A is a bench instrument with
+an inline coupler, so nobody is running this off a stick — the marker is worth keeping as a way to
+decline the prompt, not as a portable edition, and the docs say so. If a real request for
+leave-no-trace ever arrives and `DataDir` becomes mode-aware, note what that does to any
+"don't ask again" button that writes the marker for the user: answering *no* to installing would
+then silently move where the app looks for the transmission log, and the log would read empty.
+Make `DataDir` portable-aware first, or never write the marker on the user's behalf.
 
 **Pre-installer copies are adopted, not re-installed.** Unzipping in Explorer produced folders like
 `Lp100aMonitor-win-x64`; `InstallLayout.LegacyFolders` treats those as installed where they stand

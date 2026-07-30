@@ -33,9 +33,10 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
   proper application-menu entry with an icon, and symlinks `~/.local/bin/lp100a-monitor` so it runs
   from a terminal by name. No root, no `.deb`, no AppImage — and no more `chmod +x` and launching
   from a terminal. *Published but not yet field-tested on Linux.*
-- **Portable mode.** Put a file named `portable.txt` beside the executable and the app runs where
-  it stands, registers nothing, and stops offering to install — so a copy on a USB stick leaves no
-  trace on the machine.
+- **A way to decline installing for good.** Put a file named `portable.txt` beside the executable
+  and the app runs where it stands, registers nothing, and stops offering to install. Settings and
+  the transmission log still live in the user profile, so this skips installing rather than leaving
+  no trace.
 - **Silent `--install` and `--uninstall`** (with `--quiet`) for unattended use. The installed-apps
   entry uses them.
 - Copies installed by hand before there was an installer are adopted where they stand, so they
