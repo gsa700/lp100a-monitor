@@ -15,6 +15,16 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
   re-resolves the port from the adapter's chip serial, so a meter that comes back on a different COM
   number is followed rather than lost. It was intermittent because it depended on whether the USB
   device re-enumerated over the sleep; when it did, the first read failed and nothing retried.
+- **The installed-apps entry is written in one step, and re-asserted every launch.** It used to be
+  eleven separate `reg.exe` calls, any of which could quietly not happen — which is the shape of the
+  entry that went missing in 0.9.18-beta, since a call that silently fails looks exactly like one
+  that worked. It is now a single import, so the registration either happens or reports that it
+  didn't, and it is one action for a security product to allow rather than eleven.
+- **A missing entry now repairs itself.** Starting the app re-asserts its registration instead of
+  checking once and skipping when it looks present. That check was very likely why the lost entry
+  stayed lost: the installed copy is launched immediately after a successful registration, so it saw
+  the entry, skipped, and never looked again — leaving whatever removed it afterwards unopposed.
+
 - Serial problems now explain themselves — a port in use, a missing cable, or the `dialout` group on
   Linux — instead of reporting a raw error, and a copy that is merely mid-reconnect says so rather
   than accusing another app of holding the port.

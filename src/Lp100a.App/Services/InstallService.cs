@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Lp100a.Core;
 
 namespace Lp100a.App.Services;
@@ -54,6 +55,14 @@ public static class InstallService
     /// <summary>Registry key under HKCU that puts the app in Settings → Apps → Installed apps.</summary>
     private const string UninstallKey =
         @"HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Lp100aMonitor";
+
+    /// <summary>
+    /// The same key with the hive spelled out. <c>reg.exe</c>'s command line accepts the <c>HKCU</c>
+    /// abbreviation, but the <c>.reg</c> file format only understands the long form — a file using
+    /// the short one imports without error and writes nothing.
+    /// </summary>
+    private const string UninstallKeyLong =
+        @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\Lp100aMonitor";
 
     /// <summary>Display name, used for the installed-apps entry and the Start Menu shortcut.</summary>
     public const string DisplayName = "LP-100A Monitor";
@@ -259,40 +268,76 @@ public static class InstallService
         return wrote && IsRegistered();
     }
 
-    /// <summary>Write every value of the installed-apps entry. False if any single write failed.</summary>
+    /// <summary>
+    /// Write the whole installed-apps entry in one <c>reg import</c>. Returns whether reg.exe said it
+    /// worked.
+    /// </summary>
+    /// <remarks>
+    /// One invocation rather than one per value, deliberately. Eleven separate <c>reg add</c> spawns
+    /// are eleven things that can individually fail to happen, and a spawn that silently doesn't take
+    /// is indistinguishable from one that did — which is exactly the shape of the entry that was
+    /// written, reported success, and then wasn't there (0.9.18-beta). It also makes the whole
+    /// registration one action for a security product to allow or block instead of eleven, and cheap
+    /// enough to repeat on every launch, which is what lets a lost entry heal itself.
+    ///
+    /// The file goes to the temp directory as UTF-16 with a BOM — <c>reg import</c> reads ANSI too,
+    /// but only Unicode survives a user profile path with non-ASCII characters in it.
+    /// </remarks>
     private static bool WriteUninstallEntry(string exePath, string dir)
     {
-        var version = UpdateService.CurrentVersion;
+        var values = new List<RegValue>
+        {
+            RegFile.Sz("DisplayName", DisplayName),
+            RegFile.Sz("DisplayVersion", UpdateService.CurrentVersion),
+            RegFile.Sz("Publisher", "David Erickson (AB0R)"),
+            RegFile.Sz("DisplayIcon", exePath),
+            RegFile.Sz("InstallLocation", dir),
+            RegFile.Sz("URLInfoAbout", $"https://github.com/{UpdateService.Repo}"),
+
+            // Windows gives the user no way to answer a dialog it did not expect, so the entry's own
+            // button runs the quiet path — which keeps the data directory.
+            RegFile.Sz("UninstallString", $"\"{exePath}\" --uninstall"),
+            RegFile.Sz("QuietUninstallString", $"\"{exePath}\" --uninstall --quiet"),
+
+            RegFile.Dword("NoModify", 1),
+            RegFile.Dword("NoRepair", 1),
+        };
+
         var sizeKb = FileSizeKb(exePath);
+        if (sizeKb > 0) values.Add(RegFile.Dword("EstimatedSize", sizeKb));
 
-        var ok = RegSet(UninstallKey, "DisplayName", DisplayName);
-        ok &= RegSet(UninstallKey, "DisplayVersion", version);
-        ok &= RegSet(UninstallKey, "Publisher", "David Erickson (AB0R)");
-        ok &= RegSet(UninstallKey, "DisplayIcon", exePath);
-        ok &= RegSet(UninstallKey, "InstallLocation", dir);
-        ok &= RegSet(UninstallKey, "URLInfoAbout", $"https://github.com/{UpdateService.Repo}");
-
-        // Windows gives the user no way to answer a dialog it did not expect, so the entry's own
-        // button runs the quiet path — which keeps the data directory.
-        ok &= RegSet(UninstallKey, "UninstallString", $"\"{exePath}\" --uninstall");
-        ok &= RegSet(UninstallKey, "QuietUninstallString", $"\"{exePath}\" --uninstall --quiet");
-
-        ok &= RegSet(UninstallKey, "NoModify", "1", "REG_DWORD");
-        ok &= RegSet(UninstallKey, "NoRepair", "1", "REG_DWORD");
-        if (sizeKb > 0) ok &= RegSet(UninstallKey, "EstimatedSize", sizeKb.ToString(), "REG_DWORD");
-
-        return ok;
+        var file = Path.Combine(Path.GetTempPath(), "lp100a-register.reg");
+        try
+        {
+            File.WriteAllText(file, RegFile.Build(UninstallKeyLong, values), new UnicodeEncoding(false, true));
+            return Run(RegExe, ["import", file]) == 0;
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+        finally
+        {
+            try { File.Delete(file); } catch { /* a leftover in temp is not worth failing over */ }
+        }
     }
 
     /// <summary>
-    /// Adopt a copy that is already sitting in an install directory but was put there by hand,
-    /// before there was an installer. Registers it where it stands rather than copying it to the
-    /// canonical folder, which would leave the original behind as an orphan.
+    /// Called at every startup. Adopts a copy that was put in an install directory by hand before
+    /// there was an installer — registering it where it stands rather than copying it to the
+    /// canonical folder, which would leave the original behind as an orphan — and re-asserts the
+    /// registration of an already-installed copy.
     /// </summary>
+    /// <remarks>
+    /// This used to return early when <see cref="IsRegistered"/> was true, and that is very likely why
+    /// the lost entry in 0.9.18-beta stayed lost: the check runs once at startup, and the installed
+    /// copy is launched immediately after a *successful* registration, so it saw the entry present,
+    /// skipped — and nothing looked again for the rest of the process's life. Whatever removed the
+    /// entry afterwards therefore had no opposition. Re-asserting costs one <c>reg import</c> on
+    /// Windows, and <see cref="RegisterUnix"/> skips the work whose result is already correct, so the
+    /// price of self-healing is small enough to pay on every launch.
+    /// </remarks>
     public static void EnsureRegistered()
     {
         if (Mode != InstallMode.Installed) return;
-        if (IsRegistered()) return;
         Register(ExePath);
     }
 
@@ -464,10 +509,6 @@ public static class InstallService
     /// one more thing that can differ between the contexts this runs in for no good reason.
     /// </summary>
     private static string RegExe => Path.Combine(Environment.SystemDirectory, "reg.exe");
-
-    /// <summary>Write one value, reporting whether reg.exe actually said it worked.</summary>
-    private static bool RegSet(string key, string name, string value, string type = "REG_SZ") =>
-        Run(RegExe, ["add", key, "/v", name, "/t", type, "/d", value, "/f"]) == 0;
 
     /// <summary>Run a console tool with no window and return its exit code (-1 if it wouldn't start).</summary>
     private static int Run(string fileName, IEnumerable<string> arguments)
