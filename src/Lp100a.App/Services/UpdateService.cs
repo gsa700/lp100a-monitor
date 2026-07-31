@@ -89,10 +89,17 @@ public static class UpdateService
         return info;
     }
 
+    /// <summary>
+    /// Temp directory the update is downloaded and unpacked into. The relaunched app must never have
+    /// this as its working directory: a directory in use as one cannot be deleted, so the next
+    /// update's clean-up below would throw and updating twice without a restart would fail.
+    /// </summary>
+    private static string StageRoot => Path.Combine(Path.GetTempPath(), "Lp100aMonitor-update");
+
     /// <summary>Download the asset zip, extract it, and return the path to the staged executable.</summary>
     public static async Task<string> DownloadAndStageAsync(string assetUrl)
     {
-        var tmp = Path.Combine(Path.GetTempPath(), "Lp100aMonitor-update");
+        var tmp = StageRoot;
         if (Directory.Exists(tmp)) Directory.Delete(tmp, recursive: true);
         Directory.CreateDirectory(tmp);
 
@@ -124,15 +131,27 @@ public static class UpdateService
         var target = Environment.ProcessPath
             ?? throw new InvalidOperationException("Cannot determine the current executable path.");
         var pid = Environment.ProcessId;
-        var dir = Path.GetDirectoryName(stagedExe)!;
+        var targetDir = Path.GetDirectoryName(target)!;
+
+        // The helper lives in the temp root, not in the staging directory — it deletes that
+        // directory, and a script cannot sit in the folder it is removing. Same shape as the
+        // uninstall trampoline, which is in temp because the install directory is its target.
+        static string Q(string p) => p.Replace("'", "''");
 
         if (OperatingSystem.IsWindows())
         {
-            var ps1 = Path.Combine(dir, "apply-update.ps1");
+            var ps1 = Path.Combine(Path.GetTempPath(), "lp100a-apply-update.ps1");
             File.WriteAllText(ps1,
                 $"while (Get-Process -Id {pid} -ErrorAction SilentlyContinue) {{ Start-Sleep -Milliseconds 300 }}\n" +
-                $"Copy-Item -LiteralPath '{stagedExe}' -Destination '{target}' -Force\n" +
-                $"Start-Process -FilePath '{target}'\n");
+                $"Copy-Item -LiteralPath '{Q(stagedExe)}' -Destination '{Q(target)}' -Force\n" +
+                // -WorkingDirectory matters: without it the relaunched app inherits this script's
+                // directory. That used to be the staging folder, which the app then held open — so
+                // it could not be deleted, and the next update's clean-up of it threw, meaning you
+                // could not update twice without restarting first.
+                $"Start-Process -FilePath '{Q(target)}' -WorkingDirectory '{Q(targetDir)}'\n" +
+                $"Remove-Item -LiteralPath '{Q(StageRoot)}' -Recurse -Force -ErrorAction SilentlyContinue\n" +
+                // Take the helper with it, so an update doesn't leave its own tooling behind in temp.
+                $"Remove-Item -LiteralPath '{Q(ps1)}' -Force -ErrorAction SilentlyContinue\n");
             Process.Start(new ProcessStartInfo
             {
                 FileName = "powershell.exe",
@@ -143,13 +162,16 @@ public static class UpdateService
         }
         else
         {
-            var sh = Path.Combine(dir, "apply-update.sh");
+            var sh = Path.Combine(Path.GetTempPath(), "lp100a-apply-update.sh");
             File.WriteAllText(sh,
                 "#!/bin/sh\n" +
                 $"while kill -0 {pid} 2>/dev/null; do sleep 0.3; done\n" +
-                $"cp -f '{stagedExe}' '{target}'\n" +
-                $"chmod +x '{target}'\n" +
-                $"'{target}' &\n");
+                $"cp -f '{Q(stagedExe)}' '{Q(target)}'\n" +
+                $"chmod +x '{Q(target)}'\n" +
+                // cd first, for the same reason -WorkingDirectory is set on Windows.
+                $"(cd '{Q(targetDir)}' && '{Q(target)}' &)\n" +
+                $"rm -rf '{Q(StageRoot)}'\n" +
+                $"rm -f '{Q(sh)}'\n");
             Process.Start(new ProcessStartInfo { FileName = "/bin/sh", Arguments = $"\"{sh}\"", UseShellExecute = false });
         }
     }
