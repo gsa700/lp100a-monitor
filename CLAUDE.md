@@ -70,6 +70,34 @@ manages N meters via a MeterManager).
 - The **User** alarm setpoint value isn't reported over serial, so on-screen alert scaling falls
   back to defaults for User/Off; the meter's own hardware alarm/relay still works.
 
+## The serial link supervises itself
+
+`SerialReader` runs a supervisor loop: resolve port → run one session → back off 1 s → repeat, until
+`Stop()`. Ported from the W2 monitor (2026-07-28) after the LP-100A was observed losing its meter
+across a PC sleep while the W2 sitting beside it recovered every time.
+
+The bug it fixes was structural, and worth remembering as a shape: the poll loop used to sit *inside*
+the `try`, so the first exception ended the thread and the app stayed dead until someone reconnected
+by hand. A sleep/resume throws exactly that exception whenever the USB device re-enumerates — which
+is why it was intermittent, since sometimes the handle survives. **The loop must wrap the `try`, not
+the other way round.**
+
+- **Two loss signals, weighted differently.** A hard port error is acted on at once. Silence is not:
+  an LP-100A parked on a screen other than Watts is *legitimately* quiet, and reconnecting cannot fix
+  that, so `LinkHealth`'s silence threshold is 6 s — comfortably above the 2 s stale indicator — and
+  is only a backstop for a handle that survives a resume but never delivers again. Shortening it
+  would put a wrongly-parked meter into a permanent reconnect loop.
+- **Reconnect re-resolves the port** through the `resolvePort` delegate, which `MeterService` wires to
+  `PortIdentity.ResolvePort` and the saved chip serial. A meter that comes back on a different COM
+  number is followed; `CurrentPort` is republished on the UI thread when it moves.
+- **`IsConnected` tracks the reader thread, not the last message.** An error now usually means
+  "reconnecting", so clearing the flag on any error would make `MeterService`'s own
+  `ReadingReceived` guard discard the frames a successful reconnect delivers — a link that recovered
+  in fact but stayed frozen on screen. During a reconnect the meter reads stale, which is accurate.
+- `Open()`/`Close()` run under a watchdog with an atomic ownership handoff, because a surprise-removed
+  device can wedge the native call; without the handoff a late-completing open orphans a handle and
+  the next attempt hits a self-inflicted "port in use".
+
 ## CAT frequency: rigctld only — deliberately
 
 The log's `Freq_MHz` comes from **Hamlib rigctld over TCP, and nothing else**. No native

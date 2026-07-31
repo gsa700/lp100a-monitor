@@ -5,6 +5,20 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [Unreleased]
+
+### Fixed
+- **The meter is no longer lost when the computer sleeps.** On resume the app would sometimes sit
+  disconnected until you reconnected it by hand, while W2 Monitor on the same machine recovered
+  every time. The serial reader now supervises itself: a dropped link is detected, the port is
+  closed properly, and it reconnects about a second later, as many times as it takes. Each attempt
+  re-resolves the port from the adapter's chip serial, so a meter that comes back on a different COM
+  number is followed rather than lost. It was intermittent because it depended on whether the USB
+  device re-enumerated over the sleep; when it did, the first read failed and nothing retried.
+- Serial problems now explain themselves — a port in use, a missing cable, or the `dialout` group on
+  Linux — instead of reporting a raw error, and a copy that is merely mid-reconnect says so rather
+  than accusing another app of holding the port.
+
 ## [0.9.18-beta] - 2026-07-28
 
 ### Fixed

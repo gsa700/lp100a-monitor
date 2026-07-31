@@ -66,7 +66,30 @@ public sealed class MeterService : IDisposable
         {
             Status = msg;
             StatusIsError = isError;
-            if (isError) { IsConnected = false; IsStale = false; }
+
+            // The reader supervises itself now, so an error no longer means the session is over —
+            // it usually means "dropped, reconnecting". Tie IsConnected to whether the reader thread
+            // is still running rather than to the last message: clearing it on any error would make
+            // the ReadingReceived guard below discard the very frames a successful reconnect starts
+            // delivering, leaving the app permanently frozen on a link that had actually recovered.
+            IsConnected = _reader.IsRunning;
+
+            if (!IsConnected)
+            {
+                IsStale = false;
+            }
+            else if (isError)
+            {
+                // Reconnecting: whatever is on screen is frozen, which is exactly what stale means.
+                IsStale = true;
+            }
+            else
+            {
+                // A fresh (re)connect — restart the grace period before the watchdog can flag stale.
+                _lastReadingUtc = DateTime.UtcNow;
+                IsStale = false;
+            }
+
             StateChanged?.Invoke();
         });
 
@@ -87,7 +110,13 @@ public sealed class MeterService : IDisposable
 
     public static string[] GetPortNames() => SerialReader.GetPortNames();
 
-    public void Connect(string port)
+    /// <param name="serial">
+    /// The meter's USB chip serial, when known. Passed so each reconnect attempt re-resolves the
+    /// port: a device that comes back on a different COM number after a sleep/resume or a replug is
+    /// then followed to wherever it now is, instead of the reader retrying a port that no longer
+    /// exists. Without it the reconnect still works, but only if the number hasn't moved.
+    /// </param>
+    public void Connect(string port, string? serial = null)
     {
         CurrentPort = port;
         Status = $"Connecting {port}…";
@@ -95,7 +124,19 @@ public sealed class MeterService : IDisposable
         IsConnected = true;
         IsStale = false;
         _lastReadingUtc = DateTime.UtcNow;   // grace period before the watchdog can flag stale
-        _reader.Start(port);
+        _reader.Start(port, () =>
+        {
+            var resolved = PortIdentity.ResolvePort(port, serial) ?? port;
+            // Runs on the reader thread; hop to the UI thread to publish a port that has moved, so
+            // the readouts don't keep naming a COM number the meter has left behind.
+            if (!string.Equals(resolved, CurrentPort, StringComparison.OrdinalIgnoreCase))
+                Dispatcher.UIThread.Post(() =>
+                {
+                    CurrentPort = resolved;
+                    StateChanged?.Invoke();
+                });
+            return resolved;
+        });
         StateChanged?.Invoke();
     }
 

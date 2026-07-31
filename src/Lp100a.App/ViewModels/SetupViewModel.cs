@@ -181,7 +181,8 @@ public sealed class SetupViewModel : ViewModelBase
     private void ToggleConnect()
     {
         if (IsConnected) _meter.Disconnect();
-        else if (SelectedPort is { } port) _meter.Connect(port);
+        // Pass the adapter's chip serial so a reconnect can follow the meter if the port renumbers.
+        else if (SelectedPort is { } port) _meter.Connect(port, _selectedPortOption?.Serial);
     }
 
     private void RefreshPorts()

@@ -67,7 +67,7 @@ public partial class App : Application
             // Don't take the serial port for a run that exists only to uninstall.
             if (!Program.PendingUninstall
                 && startupPort is not null && MeterService.GetPortNames().Contains(startupPort))
-                _meter.Connect(startupPort);
+                _meter.Connect(startupPort, _config.Serial);
 
             _mainWindow = new MainWindow { DataContext = new MainWindowViewModel(_meter, _display) };
             RestoreMainBounds(_mainWindow);
