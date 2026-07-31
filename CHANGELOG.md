@@ -5,7 +5,7 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
-## [Unreleased]
+## [0.9.19-beta] - 2026-07-31
 
 ### Fixed
 - **The meter is no longer lost when the computer sleeps.** On resume the app would sometimes sit
@@ -24,7 +24,12 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
   checking once and skipping when it looks present. That check was very likely why the lost entry
   stayed lost: the installed copy is launched immediately after a successful registration, so it saw
   the entry, skipped, and never looked again — leaving whatever removed it afterwards unopposed.
-
+- **Uninstalling can no longer delete a folder that isn't the app's.** `--uninstall` removed the
+  folder the program was sitting in without checking how it got there, so running it on a copy that
+  had simply been unzipped somewhere — routinely Downloads or the Desktop — would have deleted that
+  folder and everything else in it. An installed copy still removes its own folder, because the app
+  created it; a loose or portable copy now removes its registrations and leaves the file where its
+  owner put it. Nobody is known to have hit this.
 - Serial problems now explain themselves — a port in use, a missing cable, or the `dialout` group on
   Linux — instead of reporting a raw error, and a copy that is merely mid-reconnect says so rather
   than accusing another app of holding the port.
