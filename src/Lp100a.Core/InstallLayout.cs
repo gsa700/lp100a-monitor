@@ -108,6 +108,24 @@ public static class InstallLayout
     /// no matter where the copy happens to sit, and it can't be defeated by putting the file
     /// somewhere the app also recognises.
     /// </remarks>
+    /// <summary>
+    /// Whether uninstalling may delete the directory the executable sits in — true only for
+    /// <see cref="InstallMode.Installed"/>.
+    /// </summary>
+    /// <remarks>
+    /// The directory is the app's own **only** when the app put itself there. A Loose copy is a file
+    /// the user downloaded and dropped somewhere of their choosing, and that somewhere is routinely
+    /// Downloads or the Desktop; a Portable copy is deliberately running on ground it does not own,
+    /// often a stick. Deleting either folder recursively would take everything else in it. So
+    /// `--uninstall` on a loose copy removes the registrations and stops — the file stays where its
+    /// owner put it.
+    ///
+    /// Ported from the W2 monitor, whose CLAUDE.md flags this as a divergence worth bringing back
+    /// here: this app previously deleted <c>ExeDirectory</c> unconditionally, so running
+    /// <c>--uninstall</c> on a copy sitting in Downloads would have deleted Downloads.
+    /// </remarks>
+    public static bool OwnsExeDirectory(InstallMode mode) => mode == InstallMode.Installed;
+
     public static InstallMode Detect(
         string exeDirectory,
         bool portableMarkerPresent,

@@ -318,10 +318,14 @@ public static class InstallService
     {
         Unregister();
 
-        // The install directory is private to the app on both platforms, so removing it whole is
-        // safe. It must never become a shared directory such as ~/.local/bin — see SymlinkPath,
-        // which is removed as a single file for exactly that reason.
-        var toDelete = new List<string> { ExeDirectory };
+        // Only ever delete a directory this app created. When Mode is Installed the folder is the
+        // app's own and removing it whole is safe — it must never become a shared directory such as
+        // ~/.local/bin, see SymlinkPath, which is removed as a single file for exactly that reason.
+        // A Loose or Portable copy sits in a folder belonging to whoever put it there, routinely
+        // Downloads or the Desktop, and a recursive delete would take everything else with it. Those
+        // uninstalls remove the registrations and leave the file where its owner left it.
+        var toDelete = new List<string>();
+        if (InstallLayout.OwnsExeDirectory(Mode)) toDelete.Add(ExeDirectory);
         toDelete.AddRange(DataFilesToRemove(options));
 
         var pid = Environment.ProcessId;
