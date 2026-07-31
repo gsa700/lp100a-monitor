@@ -5,6 +5,18 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.20-beta] - 2026-07-31
+
+### Fixed
+- **Updating twice in a row without restarting in between would have failed.** The updater relaunched
+  the app without giving it a working directory of its own, so it inherited the temporary folder the
+  update had been unpacked into. Windows will not delete a folder a running program is sitting in,
+  so that folder — about 100 MB of unpacked release — survived, and since each update starts by
+  clearing that same folder, the next one would have stopped with an error. The app is now relaunched
+  in its own install folder, and the helper tidies the temporary folder and itself away once the
+  swap is done. Same oversight as the one fixed for installing in 0.9.18-beta, in the other place it
+  was made.
+
 ## [0.9.19-beta] - 2026-07-31
 
 ### Fixed
