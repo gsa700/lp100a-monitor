@@ -166,6 +166,7 @@ public partial class App : Application
 
         try
         {
+            InstallService.LogRegistration("--- gui install (prompt accepted) ---");
             var installed = InstallService.Install();
 
             // Installed but not listed is a real outcome, not a detail: the program works, yet the

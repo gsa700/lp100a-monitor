@@ -259,6 +259,8 @@ public static class InstallService
         // The result is now the read-back verification itself, so there is nothing left to confirm
         // afterwards. The old `wrote && IsRegistered()` asked whether *an* entry existed, which an
         // orphan from a previous version could satisfy on its own.
+        LogRegistration($"register: exe={exePath}");
+
         var ok = WriteUninstallEntry(exePath, dir, keepEvidence: false);
         if (!ok)
         {
@@ -268,6 +270,7 @@ public static class InstallService
 
         CreateShortcut(StartMenuShortcut, exePath, dir, "Monitor for the TelePost LP-100A wattmeter");
 
+        LogRegistration(ok ? "register: ok" : "register: FAILED");
         return ok;
     }
 
@@ -329,23 +332,35 @@ public static class InstallService
             var verified = string.Equals(version, UpdateService.CurrentVersion, StringComparison.Ordinal)
                         && string.Equals(icon, exePath, StringComparison.OrdinalIgnoreCase);
 
+            LogRegistration(
+                $"  import exit={code} verified={verified} " +
+                $"readback version='{version ?? "<absent>"}' icon='{icon ?? "<absent>"}'" +
+                (string.IsNullOrWhiteSpace(stderr) ? "" : $" stderr='{stderr.Trim()}'") +
+                (string.IsNullOrWhiteSpace(stdout) ? "" : $" stdout='{stdout.Trim()}'"));
+
             if (!verified && keepEvidence)
             {
                 keep = true;
-                RecordFailure(
-                    $"reg import exit={code}\n" +
-                    $"  stdout: {stdout.Trim()}\n" +
-                    $"  stderr: {stderr.Trim()}\n" +
-                    $"  wanted DisplayVersion='{UpdateService.CurrentVersion}', read back '{version ?? "<absent>"}'\n" +
-                    $"  wanted DisplayIcon='{exePath}', read back '{icon ?? "<absent>"}'\n" +
-                    $"  the .reg file it imported has been kept at {file}\n" +
-                    $"  file content follows:\n{content}");
+                LogRegistration(
+                    $"  FAILED after retry. wanted DisplayVersion='{UpdateService.CurrentVersion}', " +
+                    $"DisplayIcon='{exePath}'. The .reg file it imported has been kept at {file}, " +
+                    $"and its content was:\n{content}");
             }
 
             return verified;
         }
-        catch (IOException) { return false; }
-        catch (UnauthorizedAccessException) { return false; }
+        // These used to return false with no record, which is one of the two ways a registration
+        // could fail leaving nothing at all behind. Name the exception instead.
+        catch (IOException ex)
+        {
+            LogRegistration($"  {ex.GetType().Name} writing or importing {file}: {ex.Message}");
+            return false;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            LogRegistration($"  UnauthorizedAccessException on {file}: {ex.Message}");
+            return false;
+        }
         finally
         {
             // Kept deliberately when verification failed — every previous occurrence destroyed its
@@ -365,17 +380,40 @@ public static class InstallService
         return (RegQuery.Value(stdout, "DisplayVersion"), RegQuery.Value(stdout, "DisplayIcon"));
     }
 
+    /// <summary>Name of the registration diagnostics log, in <see cref="ConfigStore.DataDir"/>.</summary>
+    public const string RegistrationLogName = "register.log";
+
     /// <summary>
-    /// Append to a diagnostics log beside the settings. Registration failures have been silent and
-    /// unreproducible; this is what lets the next one be looked at rather than guessed about.
+    /// Append a line to the registration log. Written on **success as well as failure**, which is the
+    /// whole point of it.
     /// </summary>
-    private static void RecordFailure(string detail)
+    /// <remarks>
+    /// The installed-apps entry has gone missing repeatedly since 0.9.18-beta and every hunt has
+    /// stalled in the same place: "the registration was never attempted" and "it was attempted and
+    /// failed silently" leave identical evidence, namely none. Recording both outcomes makes the
+    /// absence of a line meaningful — it then proves the code was never reached, rather than being
+    /// consistent with every theory at once.
+    ///
+    /// Callers also record which entry point they came from, because whether an install ran through
+    /// the GUI prompt or the `--install` command line could not be established after the fact, and
+    /// those two paths report failure very differently.
+    /// </remarks>
+    public static void LogRegistration(string message)
     {
         try
         {
-            var path = Path.Combine(ConfigStore.DataDir, "register-failure.log");
-            File.AppendAllText(path,
-                $"--- {DateTime.Now:yyyy-MM-dd HH:mm:ss} ---\n{detail}\n\n");
+            var path = Path.Combine(ConfigStore.DataDir, RegistrationLogName);
+
+            // Written on every launch, so it must not grow without bound. Start a fresh file rather
+            // than trimming: the interesting run is always the most recent one.
+            try
+            {
+                var existing = new FileInfo(path);
+                if (existing.Exists && existing.Length > 256 * 1024) existing.Delete();
+            }
+            catch (IOException) { /* keep appending to the old one rather than failing */ }
+
+            File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {message}\n");
         }
         catch (IOException) { /* diagnostics must never break an install */ }
         catch (UnauthorizedAccessException) { }
@@ -398,7 +436,16 @@ public static class InstallService
     /// </remarks>
     public static void EnsureRegistered()
     {
-        if (Mode != InstallMode.Installed) return;
+        // Logged even when it declines, so that no line at all in the log means this was never
+        // called — which is a different bug from it running and failing, and the two have been
+        // indistinguishable from the outside every time this has been chased.
+        if (Mode != InstallMode.Installed)
+        {
+            LogRegistration($"startup: skipped, mode is {Mode} (exe {ExePath})");
+            return;
+        }
+
+        LogRegistration("startup: re-asserting registration");
         Register(ExePath);
     }
 
@@ -527,12 +574,19 @@ public static class InstallService
                 (code, stdout, stderr) = RunCapture(RegExe, ["delete", UninstallKey, "/f"]);
                 if (IsRegistered())
                 {
-                    RecordFailure(
-                        $"reg delete exit={code} but the entry is still present\n" +
-                        $"  stdout: {stdout.Trim()}\n" +
-                        $"  stderr: {stderr.Trim()}\n" +
-                        $"  Settings → Apps will still list LP-100A Monitor after this uninstall.");
+                    LogRegistration(
+                        $"unregister: FAILED, exit={code} but the entry is still present. " +
+                        $"stdout='{stdout.Trim()}' stderr='{stderr.Trim()}'. " +
+                        "Settings → Apps will still list LP-100A Monitor after this uninstall.");
                 }
+                else
+                {
+                    LogRegistration($"unregister: ok on retry (first attempt exit={code})");
+                }
+            }
+            else
+            {
+                LogRegistration($"unregister: ok (exit={code})");
             }
             TryDelete(StartMenuShortcut);
             return;

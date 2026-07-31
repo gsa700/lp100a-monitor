@@ -5,6 +5,25 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.22-beta] - 2026-07-31
+
+### Added
+- **The app now records what happened when it registers itself**, in `register.log` beside your
+  settings — on success as much as on failure. That sounds unremarkable and is the point: the
+  Installed apps entry has gone missing repeatedly since 0.9.18-beta, and every attempt to corner it
+  has died in the same spot, because *"the registration was never attempted"* and *"it was attempted
+  and failed silently"* leave exactly the same evidence, which is none. With both outcomes recorded,
+  an empty log finally means something specific.
+- The log also notes whether an install came from the **Install prompt** or from the `--install`
+  command line. The two report a failed registration very differently — one shows a dialog, the
+  other only sets an exit code nobody sees — and there was previously no way to tell them apart
+  afterwards.
+
+### Fixed
+- Two places where a failed registration could return quietly with nothing written down: the file
+  and import errors were caught and discarded without recording the exception, and the `--install`
+  command line reported failure only through its exit code.
+
 ## [0.9.21-beta] - 2026-07-31
 
 ### Fixed
