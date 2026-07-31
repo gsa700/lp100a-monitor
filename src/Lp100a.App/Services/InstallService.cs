@@ -256,16 +256,19 @@ public static class InstallService
 
         var dir = Path.GetDirectoryName(exePath)!;
 
-        var wrote = WriteUninstallEntry(exePath, dir);
-        if (!wrote || !IsRegistered())
+        // The result is now the read-back verification itself, so there is nothing left to confirm
+        // afterwards. The old `wrote && IsRegistered()` asked whether *an* entry existed, which an
+        // orphan from a previous version could satisfy on its own.
+        var ok = WriteUninstallEntry(exePath, dir, keepEvidence: false);
+        if (!ok)
         {
             Thread.Sleep(250);
-            wrote = WriteUninstallEntry(exePath, dir);
+            ok = WriteUninstallEntry(exePath, dir, keepEvidence: true);
         }
 
         CreateShortcut(StartMenuShortcut, exePath, dir, "Monitor for the TelePost LP-100A wattmeter");
 
-        return wrote && IsRegistered();
+        return ok;
     }
 
     /// <summary>
@@ -283,7 +286,11 @@ public static class InstallService
     /// The file goes to the temp directory as UTF-16 with a BOM — <c>reg import</c> reads ANSI too,
     /// but only Unicode survives a user profile path with non-ASCII characters in it.
     /// </remarks>
-    private static bool WriteUninstallEntry(string exePath, string dir)
+    /// <param name="keepEvidence">
+    /// Set on the final attempt: keeps the imported <c>.reg</c> file and writes a diagnostics entry,
+    /// so a failure can be inspected afterwards instead of vanishing.
+    /// </param>
+    private static bool WriteUninstallEntry(string exePath, string dir, bool keepEvidence)
     {
         var values = new List<RegValue>
         {
@@ -307,17 +314,71 @@ public static class InstallService
         if (sizeKb > 0) values.Add(RegFile.Dword("EstimatedSize", sizeKb));
 
         var file = Path.Combine(Path.GetTempPath(), "lp100a-register.reg");
+        var keep = false;
         try
         {
-            File.WriteAllText(file, RegFile.Build(UninstallKeyLong, values), new UnicodeEncoding(false, true));
-            return Run(RegExe, ["import", file]) == 0;
+            var content = RegFile.Build(UninstallKeyLong, values);
+            File.WriteAllText(file, content, new UnicodeEncoding(false, true));
+            var (code, stdout, stderr) = RunCapture(RegExe, ["import", file]);
+
+            // Read back what actually landed. reg.exe has been seen returning success while writing
+            // nothing at all (0.9.20-beta), and the old check — does an entry with a DisplayName
+            // exist? — could not tell that from a real install, because an orphaned entry from a
+            // previous version supplied the name. Verify our own values instead.
+            var (version, icon) = ReadBackEntry();
+            var verified = string.Equals(version, UpdateService.CurrentVersion, StringComparison.Ordinal)
+                        && string.Equals(icon, exePath, StringComparison.OrdinalIgnoreCase);
+
+            if (!verified && keepEvidence)
+            {
+                keep = true;
+                RecordFailure(
+                    $"reg import exit={code}\n" +
+                    $"  stdout: {stdout.Trim()}\n" +
+                    $"  stderr: {stderr.Trim()}\n" +
+                    $"  wanted DisplayVersion='{UpdateService.CurrentVersion}', read back '{version ?? "<absent>"}'\n" +
+                    $"  wanted DisplayIcon='{exePath}', read back '{icon ?? "<absent>"}'\n" +
+                    $"  the .reg file it imported has been kept at {file}\n" +
+                    $"  file content follows:\n{content}");
+            }
+
+            return verified;
         }
         catch (IOException) { return false; }
         catch (UnauthorizedAccessException) { return false; }
         finally
         {
-            try { File.Delete(file); } catch { /* a leftover in temp is not worth failing over */ }
+            // Kept deliberately when verification failed — every previous occurrence destroyed its
+            // own evidence here, which is why three sightings produced nothing to look at.
+            if (!keep)
+            {
+                try { File.Delete(file); } catch { /* a leftover in temp is not worth failing over */ }
+            }
         }
+    }
+
+    /// <summary>DisplayVersion and DisplayIcon as they currently stand, in one reg.exe call.</summary>
+    private static (string? Version, string? Icon) ReadBackEntry()
+    {
+        var (code, stdout, _) = RunCapture(RegExe, ["query", UninstallKey]);
+        if (code != 0) return (null, null);
+        return (RegQuery.Value(stdout, "DisplayVersion"), RegQuery.Value(stdout, "DisplayIcon"));
+    }
+
+    /// <summary>
+    /// Append to a diagnostics log beside the settings. Registration failures have been silent and
+    /// unreproducible; this is what lets the next one be looked at rather than guessed about.
+    /// </summary>
+    private static void RecordFailure(string detail)
+    {
+        try
+        {
+            var path = Path.Combine(ConfigStore.DataDir, "register-failure.log");
+            File.AppendAllText(path,
+                $"--- {DateTime.Now:yyyy-MM-dd HH:mm:ss} ---\n{detail}\n\n");
+        }
+        catch (IOException) { /* diagnostics must never break an install */ }
+        catch (UnauthorizedAccessException) { }
     }
 
     /// <summary>
@@ -455,7 +516,24 @@ public static class InstallService
     {
         if (OperatingSystem.IsWindows())
         {
-            Run("reg.exe", ["delete", UninstallKey, "/f"]);
+            // Verified and retried, for the same reason the write is: an uninstall that leaves the
+            // entry behind means Settings → Apps still lists a program that is gone, and its
+            // Uninstall button then points at a deleted file. Seen for real after the 0.9.20-beta
+            // uninstall, and it is also what let the next install mistake the leftover for its own.
+            var (code, stdout, stderr) = RunCapture(RegExe, ["delete", UninstallKey, "/f"]);
+            if (IsRegistered())
+            {
+                Thread.Sleep(250);
+                (code, stdout, stderr) = RunCapture(RegExe, ["delete", UninstallKey, "/f"]);
+                if (IsRegistered())
+                {
+                    RecordFailure(
+                        $"reg delete exit={code} but the entry is still present\n" +
+                        $"  stdout: {stdout.Trim()}\n" +
+                        $"  stderr: {stderr.Trim()}\n" +
+                        $"  Settings → Apps will still list LP-100A Monitor after this uninstall.");
+                }
+            }
             TryDelete(StartMenuShortcut);
             return;
         }
@@ -511,7 +589,15 @@ public static class InstallService
     private static string RegExe => Path.Combine(Environment.SystemDirectory, "reg.exe");
 
     /// <summary>Run a console tool with no window and return its exit code (-1 if it wouldn't start).</summary>
-    private static int Run(string fileName, IEnumerable<string> arguments)
+    private static int Run(string fileName, IEnumerable<string> arguments) =>
+        RunCapture(fileName, arguments).Code;
+
+    /// <summary>
+    /// Run a console tool with no window and return its exit code and output (-1 if it wouldn't
+    /// start). Both streams are read to completion *before* waiting: they are redirected, so a child
+    /// that fills a pipe buffer while nobody drains it blocks forever, taking the wait with it.
+    /// </summary>
+    private static (int Code, string Out, string Err) RunCapture(string fileName, IEnumerable<string> arguments)
     {
         var psi = new ProcessStartInfo
         {
@@ -526,11 +612,13 @@ public static class InstallService
         try
         {
             using var p = Process.Start(psi);
-            if (p is null) return -1;
+            if (p is null) return (-1, "", "");
+            var so = p.StandardOutput.ReadToEnd();
+            var se = p.StandardError.ReadToEnd();
             p.WaitForExit();
-            return p.ExitCode;
+            return (p.ExitCode, so, se);
         }
-        catch (System.ComponentModel.Win32Exception) { return -1; }
+        catch (System.ComponentModel.Win32Exception ex) { return (-1, "", ex.Message); }
     }
 
     /// <summary>

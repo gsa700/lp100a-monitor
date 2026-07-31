@@ -5,6 +5,26 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [0.9.21-beta] - 2026-07-31
+
+### Fixed
+- **An install can no longer report success without having registered.** The check after writing the
+  Installed apps entry asked whether *an* entry existed, not whether the one just written had landed
+  — so a leftover entry from a previous version answered for it, and an install that registered
+  nothing looked clean. This is what hid the problem first seen in 0.9.18-beta through three
+  releases: it only ever struck when there was an older entry to be mistaken for the new one. The
+  app now reads back what it wrote and compares it, so the retry fires on the real condition and the
+  warning appears when it is warranted.
+- **Uninstalling could leave the entry behind.** Settings → Apps would go on listing LP-100A Monitor
+  after it had been removed, with an Uninstall button pointing at a deleted file — and that leftover
+  is exactly what a later install then mistook for its own. The removal is now verified and retried.
+
+### Added
+- **A registration failure now leaves evidence.** When the entry cannot be written, the app records
+  what happened next to your settings (`register-failure.log`) and keeps the registry file it tried
+  to import, instead of deleting it on the way out. Every occurrence so far destroyed its own
+  evidence, which is why three of them produced nothing to examine.
+
 ## [0.9.20-beta] - 2026-07-31
 
 ### Fixed
