@@ -185,10 +185,55 @@ the system — nothing may delete a directory it does not own. Getting this wron
 deleting every user binary on the machine, so keep new removals in `Unregister`'s file-at-a-time
 form.
 
-> **Linux is unverified on hardware.** It compiles, publishes for linux-x64/arm64, and its pure
-> logic is unit-tested, but no part of the filesystem work — icon extraction, `.desktop` write,
-> symlink, `chmod`, the `sh` uninstall trampoline — has run on a real Linux box. The CM5 is the
-> place to find out. The Windows path is verified end to end.
+**Uninstall leaves the single-file extraction directory behind** *(found via the W2 port on the CM5,
+2026-08-02; open here)*. A self-contained single-file build unpacks its native libraries to
+`$HOME/.net/<AppName>/<hash>/` on Linux and `%TEMP%\.net\…` on Windows, and `Uninstall` knows nothing
+about either. The hash changes with every build, so they accumulate one per distinct binary ever
+launched. Measured for this app: **263 MB across 15 directories** on the Windows box and 10 more on
+the CM5 — currently the larger offender of the two station tools.
+
+Not a correctness problem, but "uninstall the program" leaving that behind isn't what it says on the
+tin. Two things to get right: the path is chosen by the .NET host rather than by us, so removing
+`$HOME/.net/<AppName>` wholesale is the honest scope; and a *running* copy holds one of those
+directories open, which is why this belongs in the uninstall trampoline beside the install directory
+rather than in `Unregister`. Note the platforms differ in kind — on Windows they sit in `%TEMP%`,
+which Storage Sense can reclaim, while on Linux `$HOME/.net/` is swept by nothing, so **fix the Linux
+side first** if the two are ever separated.
+
+> **Linux is unverified on hardware *here*.** It compiles, publishes for linux-x64/arm64, and its pure
+> logic is unit-tested, but no part of this app's filesystem work — icon extraction, `.desktop` write,
+> symlink, `chmod`, the `sh` uninstall trampoline — has run on a real Linux box. The CM5 is the place
+> to find out. The Windows path is verified end to end.
+>
+> *What the W2 port has since established, 2026-08-02:* it took this pattern and ran the whole thing on
+> the CM5 — install, `.desktop` write, icon, symlink, `chmod` (both artifacts land `rwxr-xr-x`), and an
+> uninstall driven from an installed **published** build, with the generated script captured before it
+> deleted itself. The trampoline's critical property held: exactly one `rm -rf`, aimed at the install
+> directory alone, with `~/.local/bin`, the icon theme and `~/.local/share/applications` untouched. So
+> the *shape* is proven on hardware. What remains unproven for this app is its own paths and names, and
+> the concerns the W2 port does not share — chiefly that uninstall here must protect `TXlog.csv`.
+
+## Notes travel through this repo, not through memory
+
+**Claude's saved memory does not cross machines — this repo is the only channel between sessions.**
+Memory files live under the per-user Claude directory on whichever box a session ran on, so a session
+on the CM5 cannot read anything a session on the Windows box saved, and vice versa. The same applies
+between this project and `w2-monitor-x`: they are separate repos, and a finding in one reaches the
+other only if somebody writes it down in both. That is exactly how the extraction-directory leak above
+arrived here — found by the W2 port on the CM5, carried across by hand.
+
+So nothing about the project may live only in memory. It goes in `CLAUDE.md`, `CHANGELOG.md` or a
+commit message. Memory is for how to work with David; the repo is for what is true about the project.
+
+Two consequences, both of which have already bitten on the W2 side:
+
+- **Write the reasoning, not just the conclusion.** The next session is a stranger with no context — it
+  did not run the experiment, so "ruled out" saves it nothing unless the file says how it was ruled
+  out. By the same token a wrong claim here misinforms someone with no way to check it, which is why a
+  stale line in these files costs more than a bug in the code: the code has tests behind it.
+- **Pull before editing the shared docs.** Sessions are asynchronous with no liveness — neither knows
+  what the other is doing right now. On 2026-08-02 two sessions edited the W2 backlog within minutes of
+  each other and it merged cleanly only because they happened to touch different sections.
 
 ## Queued from the W2 port: one fix left (noted 2026-07-30, updated 2026-07-31)
 
