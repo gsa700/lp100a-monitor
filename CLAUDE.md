@@ -235,7 +235,7 @@ Two consequences, both of which have already bitten on the W2 side:
   what the other is doing right now. On 2026-08-02 two sessions edited the W2 backlog within minutes of
   each other and it merged cleanly only because they happened to touch different sections.
 
-## Queued from the W2 port: one fix left (noted 2026-07-30, updated 2026-07-31)
+## Queued from the W2 port: two fixes left (noted 2026-07-30, updated 2026-09-04)
 
 The W2 port took this app's installer and tabbed Setup and hit three things worth bringing back. **Two
 have since shipped here** — don't redo them:
@@ -253,6 +253,23 @@ the window appears on whatever tab was last used — with nothing on screen sayi
 gives `ShowSetup` an optional tab argument and passes the Updates index on that path, while still
 restoring the remembered tab everywhere else. Cosmetic, but it's the difference between a window that
 explains itself and one that doesn't.
+
+**Remove the Windows installed-apps registry entry and add uninstall-from-Setup** *(added
+2026-09-04; this one matters).* The entry this app writes to `HKCU\…\Uninstall` never reaches the
+registry from a shell launch. Windows' Program Compatibility Assistant attaches its
+`DetectorsAppHealth` layer to an unsigned exe started from Explorer or by the updater's helper, and
+that layer virtualises **every** registry write — `reg.exe`, in-process `RegSetValueEx`, and any child
+process — into an overlay the app reads back consistently and loses on exit. So `RegisterWindows`
+writes, verifies, reports success, and the real key never changes; `registration.log` says `ok` for
+writes that never happened. Proven in W2 with a 120 ms watcher on the real key plus double-clicked
+probes; the manifest opt-out, in-process writes and a scrubbed self-relaunch were each tested and none
+escaped it. The only untested lever is an Authenticode signature. W2's resolution, on David's call:
+install to the same per-user folder, keep the Start Menu and desktop shortcuts (files, never affected),
+delete `RegFile`, `RegistrationLog` and the reg.exe plumbing, and put a **Remove…** button on Setup →
+Updates that runs the same flow as `--uninstall`. Until this app does the same, a Windows tester has
+**no way to uninstall it** — Settings → Apps is empty and there is no button. Reference: W2 commit
+"Take the Windows registry entry out; uninstall from Setup instead" and its BACKLOG entry, which has
+the full ruled-out list so nobody repeats the investigation.
 
 Also worth knowing, though it needs no change here: **`APPDATA` does not isolate config on Windows.**
 .NET resolves `SpecialFolder.ApplicationData` through the known-folder API and ignores the environment
