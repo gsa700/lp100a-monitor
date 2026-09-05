@@ -299,8 +299,18 @@ public static class InstallService
             {
                 $"while (Get-Process -Id {pid} -ErrorAction SilentlyContinue) {{ Start-Sleep -Milliseconds 300 }}",
             };
+            // Retried for up to ten seconds rather than attempted once. The wait loop above sees the
+            // process object vanish a beat before the kernel has released its executable mapping,
+            // and a single Remove-Item in that gap fails on the locked exe — silently, because the
+            // helper cannot show anything — and leaves the install folder behind with the program
+            // still in it. Seen on 2026-09-04 when a hung uninstall was force-killed.
             lines.AddRange(toDelete.Select(p =>
-                $"Remove-Item -LiteralPath '{p.Replace("'", "''")}' -Recurse -Force -ErrorAction SilentlyContinue"));
+            {
+                var q = p.Replace("'", "''");
+                return $"for ($i = 0; $i -lt 40 -and (Test-Path -LiteralPath '{q}'); $i++) {{ " +
+                       $"Remove-Item -LiteralPath '{q}' -Recurse -Force -ErrorAction SilentlyContinue; " +
+                       $"if (Test-Path -LiteralPath '{q}') {{ Start-Sleep -Milliseconds 250 }} }}";
+            }));
             // Take the helper with it, so an uninstall doesn't leave its own tooling behind in temp.
             lines.Add($"Remove-Item -LiteralPath '{script.Replace("'", "''")}' -Force -ErrorAction SilentlyContinue");
 

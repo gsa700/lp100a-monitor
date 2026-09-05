@@ -198,7 +198,7 @@
                one just runs where it sits. -->
           <StackPanel IsVisible="{Binding CanUninstall}" Spacing="6" Margin="0,8,0,0">
             <TextBlock Text="REMOVE" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
-            <TextBlock Text="Removes the program from this computer. You'll be asked whether to keep your settings and your transmission log."
+            <TextBlock Text="Removes the program from this computer. You'll be asked whether to keep your settings. Your transmission log in Documents is never touched."
                        Foreground="{StaticResource DimBrush}" TextWrapping="Wrap"/>
             <Button Content="Remove LP-100A Monitor…" Command="{Binding UninstallCommand}" HorizontalAlignment="Left"/>
           </StackPanel>
