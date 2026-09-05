@@ -4,7 +4,7 @@ Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wa
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
 **.NET 10 + Avalonia 12.1.0**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **0.9.22-beta**.
+By David Erickson (AB0R). Status: **1.0.0-beta**.
 
 This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
@@ -118,6 +118,12 @@ For dual-coupler/SO2R later: one rigctld endpoint per radio + `\get_ptt` to tell
 - App auto-connects the saved port, pinned by its adapter chip serial.
 - In-app updater (`UpdateService`) targets GitHub `gsa700/lp100a-monitor`, `Setup → Updates`.
   Confirmed working on Windows and Linux/CM5.
+- **Version ordering is `VersionOrder` (Core, tested), not `System.Version`.** Tags and assembly
+  versions are compared as semantic versions including the pre-release suffix, so `1.0.0-beta` →
+  `1.0.0-beta2` → `1.0.0` is an ascending series. The old dash-truncating compare made those three
+  equal, which would have stranded everyone on the first 1.0 beta. Don't "simplify" it back.
+- Since v1.0.0-beta there is **no Windows installed-apps entry**; uninstall is Setup → Updates →
+  Remove, or `--uninstall`. See *Self-install* for the reason (PCA registry virtualisation).
 
 ## Release workflow
 
@@ -155,11 +161,19 @@ Make `DataDir` portable-aware first, or never write the marker on the user's beh
 `Lp100aMonitor-win-x64`; `InstallLayout.LegacyFolders` treats those as installed where they stand
 so upgrading doesn't leave an orphaned second copy.
 
-**Registry goes through `reg.exe`, deliberately.** Add/Remove Programs needs HKCU writes, but the
-app targets plain `net10.0` so it can cross-publish Linux and Pi builds from one TFM, and the
-registry APIs only ship in `net10.0-windows`. The standalone package is deprecated at 5.0.0.
-Arguments go via `ProcessStartInfo.ArgumentList`, so paths with spaces need no hand-quoting.
-If the TFM ever gains a `-windows` variant, this is the first thing worth revisiting.
+**No registry entry on Windows — do not reintroduce one without a signature and an Explorer-launch
+test.** Windows integration is the Start Menu shortcut, full stop. The app used to write an
+installed-apps entry to `HKCU\…\Uninstall`, and from 0.9.18 through 0.9.22 that entry kept going
+missing or stale despite one-shot `reg import`, read-back verification, re-assertion every launch and
+a diagnostics log. The cause (proven in the W2 port, 2026-09-04): Windows' Program Compatibility
+Assistant attaches its `DetectorsAppHealth` layer to an unsigned exe launched from Explorer or by the
+updater's helper, and that layer virtualises **every** registry write — `reg.exe`, in-process
+`RegSetValueEx`, children included — into an overlay the process reads back consistently and loses on
+exit. So every "verified" write from a shell launch was real to the process and invisible to Windows.
+The manifest `supportedOS` opt-out, in-process writes and a scrubbed relaunch were each tested in W2
+and none escaped it; the one untested lever is an Authenticode signature. The registration code is
+one commit back in history (v0.9.22-beta) if that ever happens. Removal lives on Setup → Updates
+instead, running the same flow as `--uninstall`. The full ruled-out list is in W2's `BACKLOG.md`.
 
 **The transmission log is not app data.** `ConfigStore.DataDir` holds `config.json` *and*
 `TXlog.csv` plus its archives. Uninstall asks about them separately, both defaulting to keep, and
@@ -235,16 +249,20 @@ Two consequences, both of which have already bitten on the W2 side:
   what the other is doing right now. On 2026-08-02 two sessions edited the W2 backlog within minutes of
   each other and it merged cleanly only because they happened to touch different sections.
 
-## Queued from the W2 port: two fixes left (noted 2026-07-30, updated 2026-09-04)
+## Queued from the W2 port: one fix left (noted 2026-07-30, updated 2026-09-04)
 
-The W2 port took this app's installer and tabbed Setup and hit three things worth bringing back. **Two
-have since shipped here** — don't redo them:
+The W2 port took this app's installer and tabbed Setup and hit several things worth bringing back.
+**These have shipped here** — don't redo them:
 
 - *Uninstall deleting a directory it didn't create* — fixed in `340cf85`, released in v0.9.19-beta.
-- *Registration written per-value and never re-asserted* — fixed in `c51b45a` (one `reg import`,
-  rewritten every launch), released in v0.9.19-beta and refined through v0.9.22-beta.
+- *Registration written per-value and never re-asserted* — fixed in v0.9.19-beta, then made moot:
+  the registry entry was removed altogether in v1.0.0-beta (see *Self-install* above for why).
+- *Updater blind to pre-release suffixes* — `VersionOrder` (Core, tested) ported in v1.0.0-beta. The
+  old comparison truncated at the dash, so 1.0.0-beta, 1.0.0-beta2 and 1.0.0 were indistinguishable
+  and nobody on the first beta would ever have been offered the next.
+- *Uninstall from Setup* — the **Remove…** button on Setup → Updates, v1.0.0-beta.
 
-The third is still open. Reference implementation is in `~/Documents/Programming/w2-monitor-x`
+One is still open. Reference implementation is in `~/Documents/Programming/w2-monitor-x`
 (`src/W2.App/App.axaml.cs`, `src/W2.App/ViewModels/SetupViewModel.cs`).
 
 **Opening Setup because of an update should select the Updates tab.** `SelectedTabIndex` is restored
@@ -253,23 +271,6 @@ the window appears on whatever tab was last used — with nothing on screen sayi
 gives `ShowSetup` an optional tab argument and passes the Updates index on that path, while still
 restoring the remembered tab everywhere else. Cosmetic, but it's the difference between a window that
 explains itself and one that doesn't.
-
-**Remove the Windows installed-apps registry entry and add uninstall-from-Setup** *(added
-2026-09-04; this one matters).* The entry this app writes to `HKCU\…\Uninstall` never reaches the
-registry from a shell launch. Windows' Program Compatibility Assistant attaches its
-`DetectorsAppHealth` layer to an unsigned exe started from Explorer or by the updater's helper, and
-that layer virtualises **every** registry write — `reg.exe`, in-process `RegSetValueEx`, and any child
-process — into an overlay the app reads back consistently and loses on exit. So `RegisterWindows`
-writes, verifies, reports success, and the real key never changes; `registration.log` says `ok` for
-writes that never happened. Proven in W2 with a 120 ms watcher on the real key plus double-clicked
-probes; the manifest opt-out, in-process writes and a scrubbed self-relaunch were each tested and none
-escaped it. The only untested lever is an Authenticode signature. W2's resolution, on David's call:
-install to the same per-user folder, keep the Start Menu and desktop shortcuts (files, never affected),
-delete `RegFile`, `RegistrationLog` and the reg.exe plumbing, and put a **Remove…** button on Setup →
-Updates that runs the same flow as `--uninstall`. Until this app does the same, a Windows tester has
-**no way to uninstall it** — Settings → Apps is empty and there is no button. Reference: W2 commit
-"Take the Windows registry entry out; uninstall from Setup instead" and its BACKLOG entry, which has
-the full ruled-out list so nobody repeats the investigation.
 
 Also worth knowing, though it needs no change here: **`APPDATA` does not isolate config on Windows.**
 .NET resolves `SpecialFolder.ApplicationData` through the known-folder API and ignores the environment

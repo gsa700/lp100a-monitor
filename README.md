@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **0.9.22-beta** — real and in use, but not yet broadly field-tested.
+> Status: **1.0.0-beta** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -24,18 +24,23 @@ The build is self-contained — no .NET install required.
 - **Linux / Raspberry Pi**: `chmod +x Lp100aMonitor` then `./Lp100aMonitor`.
 
 On first run it offers to **install itself** — no separate installer to download. It copies
-itself to your user profile (`%LOCALAPPDATA%\Programs` on Windows, `~/.local/share` on Linux),
-adds a Start Menu or application-menu entry, and on Windows appears in **Settings → Apps →
-Installed apps** so you can remove it the usual way. Nothing needs administrator or root.
+itself to your user profile (`%LOCALAPPDATA%\Programs` on Windows, `~/.local/share` on Linux)
+and adds a Start Menu or application-menu entry. Nothing needs administrator or root.
+
+On Windows it does **not** appear in Settings → Apps → Installed apps, on purpose. The app is
+unsigned, and Windows silently discards registry writes from unsigned programs started via
+Explorer — so an entry there would be written and then not be there. Removal lives inside the app
+instead: **Setup → Updates → Remove LP-100A Monitor…**.
 
 Don't want it installed? Put a file named `portable.txt` beside the program. It then runs where it
 stands, registers nothing, and stops asking. Your settings and transmission log still live in your
 user profile either way, so this is a way to skip installing rather than a leave-no-trace mode.
 Delete that file if you later want it to install normally.
 
-To remove it: Windows, use **Installed apps**; Linux, run `lp100a-monitor --uninstall`. It asks
-about your settings and your transmission log **separately**, and keeps both unless you say
-otherwise — the log is your operating history and can't be recovered.
+To remove it: **Setup → Updates → Remove LP-100A Monitor…** on any platform, or run
+`lp100a-monitor --uninstall` on Linux. It asks about your settings and your transmission log
+**separately**, and keeps both unless you say otherwise — the log is your operating history and
+can't be recovered.
 
 Then open **Setup**, pick the LP-100A's COM/serial port, and Connect. The
 app pins that adapter by its chip serial and **auto-connects** next time. Keep the

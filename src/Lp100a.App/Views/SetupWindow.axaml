@@ -190,6 +190,17 @@
           </Grid>
           <CheckBox Content="Check for updates at startup" IsChecked="{Binding CheckUpdatesAtStartup}"/>
 
+          <!-- Removal lives in the app because on Windows there is nowhere else for it: the app used
+               to register an installed-apps entry, and from a shell launch the write never reached the
+               registry (see InstallService). Shown for an installed copy only — a loose or portable
+               one just runs where it sits. -->
+          <StackPanel IsVisible="{Binding CanUninstall}" Spacing="6" Margin="0,8,0,0">
+            <TextBlock Text="REMOVE" FontWeight="Bold" Foreground="{StaticResource BlueBrush}"/>
+            <TextBlock Text="Removes the program from this computer. You'll be asked whether to keep your settings and your transmission log."
+                       Foreground="{StaticResource DimBrush}" TextWrapping="Wrap"/>
+            <Button Content="Remove LP-100A Monitor…" Command="{Binding UninstallCommand}" HorizontalAlignment="Left"/>
+          </StackPanel>
+
         </StackPanel>
       </ScrollViewer>
     </TabItem>

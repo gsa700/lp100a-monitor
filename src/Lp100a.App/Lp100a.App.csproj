@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>Lp100aMonitor</AssemblyName>
-    <Version>0.9.22-beta</Version>
+    <Version>1.0.0-beta</Version>
     <Product>LP-100A Monitor</Product>
     <Authors>David Erickson (AB0R)</Authors>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
@@ -32,12 +32,12 @@
 
   <ItemGroup>
     <!-- Avalonia 12.x. Bump with: dotnet add package Avalonia -->
-    <PackageReference Include="Avalonia" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
     <!-- DataGrid ships separately from core Avalonia; used by the TX log viewer. -->
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
     <!-- No Avalonia.Diagnostics: it has no 12.x release, and nothing here ever called
          AttachDevTools(), so the old Debug-only reference was dead weight. -->
 
@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <!-- WMI for USB-serial chip-serial pinning (Windows-only; guarded at runtime) -->
-    <PackageReference Include="System.Management" Version="10.0.10" />
+    <PackageReference Include="System.Management" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>

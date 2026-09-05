@@ -5,6 +5,52 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [1.0.0-beta] - 2026-09-04
+
+The first 1.0 beta. The app has been in daily use since July; what marks this release is that the
+installer's last known defect is closed — by understanding it rather than by another workaround.
+
+### Changed
+- **The app no longer registers itself in Settings → Apps → Installed apps, and removal moves into
+  the app.** A new **Remove LP-100A Monitor…** button on Setup → Updates runs the same
+  confirm-and-clean-up flow as `--uninstall`, settings and transmission-log questions included.
+  It appears for an installed copy only.
+
+  Why: the Installed apps entry had gone missing or stale on and off since 0.9.18-beta, through a
+  one-shot import, read-back verification, re-assertion on every launch and a diagnostics log — each
+  of which reported success. The cause, proven in W2 Monitor on 2026-09-04: whenever an unsigned
+  program is started from Explorer or by the updater's helper, Windows' Program Compatibility
+  Assistant attaches a compatibility layer that virtualises **every** registry write into a private
+  overlay the program reads back consistently and loses on exit. The app wrote the entry, verified
+  it, said so — and the real registry never changed. Every in-app escape was tested and none worked;
+  the only untested lever is a code-signing certificate. Rather than ship a feature that reports
+  success while doing nothing, the entry is gone. Windows integration is now the Start Menu shortcut,
+  which is a file and was never affected.
+
+  If an earlier version did leave an entry on your machine (it could, from some launch paths), it is
+  harmless and its Uninstall button still works; `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Lp100aMonitor /f`
+  clears it.
+- The install prompt says up front that the app won't be listed in Settings → Apps and where removal
+  lives, and the rare "installed, but not listed" warning becomes "installed, but no shortcut", which
+  is now the thing it actually means.
+
+### Fixed
+- **The updater can now tell 1.0.0-beta from 1.0.0-beta2 from 1.0.0.** It used to compare versions
+  after cutting off everything from the first dash, which was fine while every release was
+  `0.9.N-beta` — the numbers always moved. With a `1.0.0-beta` series the numbers hold still and the
+  suffix carries the difference, and under the old comparison nobody on the first beta would ever
+  have been offered the next one or the final release. Ordering is now proper semantic versioning
+  (a pre-release ranks below its plain release; `beta2` precedes `beta10`), lives in Core, and is
+  pinned by tests.
+
+### Removed
+- `register.log` and the registry diagnostics from 0.9.21/0.9.22-beta, which could only ever have
+  confirmed a write that Windows was discarding. Nothing else reads or writes that file; delete it if
+  you like.
+
+### Dependencies
+- Avalonia 12.1.0 → 12.1.2; System.IO.Ports and System.Management 10.0.10 → 10.0.11.
+
 ## [0.9.22-beta] - 2026-07-31
 
 ### Added

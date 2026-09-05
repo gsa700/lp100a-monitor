@@ -39,11 +39,6 @@ internal static class Program
             {
                 // Installing needs no UI: copy, register, and hand off to the installed copy.
                 case InstallAction.Install:
-                    // Recorded so the log says which entry point an install came through: this path
-                    // reports a failed registration only as an exit code, which nobody double-clicking
-                    // will ever see, and the GUI path shows a dialog. Telling them apart afterwards
-                    // was not previously possible.
-                    InstallService.LogRegistration($"--- cli install (quiet={request.Quiet}) ---");
                     var installed = InstallService.Install();
                     if (!request.Quiet) InstallService.LaunchDetached(installed.ExePath);
                     // The program is installed either way, so this is not a failure — but a script
@@ -56,12 +51,10 @@ internal static class Program
                 // history can only be removed by someone answering a prompt about it, never by a
                 // command line that a shortcut or the installed-apps entry could carry.
                 case InstallAction.Uninstall when request.Quiet:
-                    InstallService.LogRegistration("--- cli uninstall (quiet) ---");
                     InstallService.Uninstall(new UninstallOptions(RemoveSettings: false, RemoveLogs: false));
                     return;
 
                 case InstallAction.Uninstall:
-                    InstallService.LogRegistration("--- cli uninstall (prompted) ---");
                     PendingUninstall = true;
                     break;
             }

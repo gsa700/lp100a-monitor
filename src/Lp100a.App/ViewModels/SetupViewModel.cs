@@ -37,6 +37,7 @@ public sealed class SetupViewModel : ViewModelBase
         ApplyRigctldCommand = new RelayCommand(ApplyRigctld);
         ResetPeakCommand = new RelayCommand(_meter.RequestPeakReset);
         CycleAlarmCommand = new RelayCommand(_meter.CycleAlarm, () => _meter.IsConnected);
+        UninstallCommand = new RelayCommand(() => _ = UninstallAsync(), () => CanUninstall);
         UpdateStatus = $"You have {UpdateService.CurrentVersion}.";
         RefreshPorts();
         OnStateChanged();
@@ -52,6 +53,20 @@ public sealed class SetupViewModel : ViewModelBase
     public RelayCommand ApplyRigctldCommand { get; }
     public RelayCommand ResetPeakCommand { get; }
     public RelayCommand CycleAlarmCommand { get; }
+    public RelayCommand UninstallCommand { get; }
+
+    /// <summary>Only an installed copy has anything to remove; a loose or portable one just runs where it sits.</summary>
+    public bool CanUninstall => InstallService.Mode == InstallMode.Installed;
+
+    /// <summary>
+    /// Hand off to the app's uninstall flow — the same one <c>--uninstall</c> runs — so removal never
+    /// depends on anything outside the program. On Windows there is no installed-apps entry to do it
+    /// from; see <see cref="InstallService"/> for why.
+    /// </summary>
+    private static async Task UninstallAsync()
+    {
+        if (Application.Current is App app) await app.RunUninstallAsync();
+    }
 
     /// <summary>Number of tabs in SetupWindow.axaml. Used to clamp a restored index so a config
     /// written by a version with more tabs can't select a tab that isn't there (which would leave

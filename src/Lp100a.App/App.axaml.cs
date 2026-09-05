@@ -57,8 +57,9 @@ public partial class App : Application
             };
             _vectorVm = new VectorViewModel(_meter);
 
-            // A copy installed by hand before there was an installer is adopted where it stands,
-            // so it appears in Installed apps without being copied to a second location.
+            // A copy installed by hand before there was an installer is adopted where it stands, and
+            // its Start Menu shortcut (or Linux menu entry) is re-asserted every start. There is no
+            // installed-apps entry to maintain — see InstallService's class remarks for why.
             try { InstallService.EnsureRegistered(); } catch { /* never block startup over this */ }
 
             // Follow the cable by its chip serial across COM renumbering, then auto-connect.
@@ -156,9 +157,12 @@ public partial class App : Application
             "Install LP-100A Monitor on this computer?",
             affirmative: "Install",
             negative: "Not now",
-            detail: $"Copies the program to {InstallService.InstallDirectory} and lists it in "
-                  + "Settings → Apps → Installed apps, with a Start Menu shortcut. Your settings and "
-                  + "transmission log are untouched either way.\n\n"
+            detail: $"Copies the program to {InstallService.InstallDirectory} and adds "
+                  + (OperatingSystem.IsWindows()
+                      ? "a Start Menu shortcut. It will not appear in Settings → Apps; to remove it "
+                        + "later, use Setup → Updates → Remove."
+                      : "it to your applications menu, with an lp100a-monitor command.")
+                  + " Your settings and transmission log are untouched either way.\n\n"
                   + $"To run from here permanently without being asked again, put a file named "
                   + $"{InstallLayout.PortableMarker} beside the program.");
 
@@ -166,19 +170,20 @@ public partial class App : Application
 
         try
         {
-            InstallService.LogRegistration("--- gui install (prompt accepted) ---");
             var installed = InstallService.Install();
 
-            // Installed but not listed is a real outcome, not a detail: the program works, yet the
-            // usual way to remove it is missing. Say so here rather than report a clean install and
-            // leave it to be discovered later in Settings.
+            // Installed but with no menu entry is worth saying: the program works, but the way most
+            // people expect to find it again is missing.
             if (!installed.Registered)
             {
-                await ConfirmDialog.ShowNoticeAsync(_mainWindow, "Installed, with one problem",
+                await ConfirmDialog.ShowNoticeAsync(_mainWindow, "Installed, but no shortcut",
                     $"LP-100A Monitor is installed in {InstallService.InstallDirectory} and will run "
-                    + "normally, but it could not add itself to Settings → Apps → Installed apps.",
-                    detail: "Starting the installed copy again usually adds the entry. Failing that, "
-                          + "run it once with --install from a command prompt.");
+                    + "normally, "
+                    + (OperatingSystem.IsWindows()
+                        ? "but a Start Menu shortcut could not be created."
+                        : "but its applications-menu entry could not be written."),
+                    detail: "The program itself works normally, and you can remove it from "
+                          + "Setup → Updates at any time.");
             }
 
             InstallService.LaunchDetached(installed.ExePath);
@@ -196,11 +201,13 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Interactive uninstall. Settings and the transmission log are asked about separately, and
-    /// both default to being kept: they share a directory but not their stakes, and the log is
-    /// operating history that nothing can bring back.
+    /// Interactive uninstall, reached from <c>--uninstall</c> or from Setup → Updates → Remove.
+    /// Settings and the transmission log are asked about separately, and both default to being
+    /// kept: they share a directory but not their stakes, and the log is operating history that
+    /// nothing can bring back. Internal so Setup can run it: on Windows this is the only way to
+    /// remove the app, since there is no installed-apps entry (see <see cref="InstallService"/>).
     /// </summary>
-    private async Task RunUninstallAsync()
+    internal async Task RunUninstallAsync()
     {
         var confirmed = await ConfirmDialog.ShowAsync(
             _mainWindow,
@@ -209,7 +216,7 @@ public partial class App : Application
             affirmative: "Uninstall",
             negative: "Cancel",
             detail: $"Deletes the program from {InstallService.ExeDirectory} and removes its "
-                  + "Start Menu shortcut and Installed apps entry.");
+                  + (OperatingSystem.IsWindows() ? "Start Menu shortcut." : "applications-menu entry."));
 
         if (!confirmed)
         {
