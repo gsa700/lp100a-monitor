@@ -103,6 +103,9 @@ public sealed class SetupViewModel : ViewModelBase
 
     public IBrush LogStatusBrush => _logging.LastError is not null ? Palette.RedBrush : Palette.DimBrush;
 
+    /// <summary>Where the CSV is, shown so nobody has to go looking for it.</summary>
+    public string LogLocationText => $"Saved in {Path.GetDirectoryName(_logging.LogPath)}";
+
     private void OnLogChanged()
     {
         OnPropertyChanged(nameof(LogStatusText));

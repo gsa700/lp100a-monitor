@@ -33,6 +33,7 @@ public partial class App : Application
 
     /// <summary>An uninstall is in flight; don't write settings back out on the way down.</summary>
     private bool _uninstalling;
+    private RelocationResult _relocation;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -47,6 +48,16 @@ public partial class App : Application
             _meter = new MeterService();
             _frequency = new FrequencyService(_config.RigctldEnabled,
                 _config.RigctldEndpoint ?? FrequencyService.DefaultEndpoint);
+            // The log moved from app data to Documents in 1.0.0-beta2. Bring an existing one across
+            // before the logger opens the file, so nothing is ever written to the old location again.
+            // Copy-verify-delete per file; anything that doesn't move stays where it was and is said.
+            try
+            {
+                _relocation = TxLogRelocator.Run(ConfigStore.DataDir, ConfigStore.LogDirectory,
+                    ConfigStore.LogFileName);
+            }
+            catch (Exception ex) { _relocation = new RelocationResult(0, 0, [ex.Message]); }
+
             _logging = new TxLoggingService(_meter, ConfigStore.LogFilePath, _config.LogEachTx, _frequency,
                 timeoutSeconds: (int)_display.TxTimeoutSeconds);
             _setupVm = new SetupViewModel(_meter, _display, _logging, _frequency)
@@ -89,6 +100,21 @@ public partial class App : Application
                 }
 
                 if (_display.ShowVectorWindow) EnsureVectorVisible();
+
+                // Say so only when something didn't move. A clean relocation is not news, and one
+                // that partly failed must not be silent — the original is still safe in app data,
+                // but a person needs to know two copies now exist.
+                if (_relocation.Failures is { Count: > 0 } || _relocation.Left > 0)
+                {
+                    await ConfirmDialog.ShowNoticeAsync(_mainWindow, "Transmission log",
+                        $"Your transmission log now lives in {ConfigStore.LogDirectory}, but not all of "
+                        + $"it could be moved there. {_relocation.Moved} file(s) moved; "
+                        + $"{_relocation.Left + _relocation.Failures.Count} left in {ConfigStore.DataDir}.",
+                        detail: _relocation.Failures.Count > 0
+                            ? string.Join("\n", _relocation.Failures)
+                            : "A file of the same name was already in the new folder, so neither copy "
+                              + "was touched. Compare them and keep the one you want.");
+                }
 
                 // A copy running from wherever it was unzipped offers to install itself.
                 if (InstallService.Mode == InstallMode.Loose && await OfferInstallAsync()) return;
@@ -202,10 +228,11 @@ public partial class App : Application
 
     /// <summary>
     /// Interactive uninstall, reached from <c>--uninstall</c> or from Setup → Updates → Remove.
-    /// Settings and the transmission log are asked about separately, and both default to being
-    /// kept: they share a directory but not their stakes, and the log is operating history that
-    /// nothing can bring back. Internal so Setup can run it: on Windows this is the only way to
-    /// remove the app, since there is no installed-apps entry (see <see cref="InstallService"/>).
+    /// Asks about settings only. The transmission log is not asked about because uninstall cannot
+    /// reach it: it lives in Documents, which the app does not own and never deletes from. That is
+    /// a stronger guarantee than the separate keep/delete prompt it replaces. Internal so Setup can
+    /// run it: on Windows this is the only way to remove the app, since there is no installed-apps
+    /// entry (see <see cref="InstallService"/>).
     /// </summary>
     internal async Task RunUninstallAsync()
     {
@@ -216,7 +243,8 @@ public partial class App : Application
             affirmative: "Uninstall",
             negative: "Cancel",
             detail: $"Deletes the program from {InstallService.ExeDirectory} and removes its "
-                  + (OperatingSystem.IsWindows() ? "Start Menu shortcut." : "applications-menu entry."));
+                  + (OperatingSystem.IsWindows() ? "Start Menu shortcut. " : "applications-menu entry. ")
+                  + $"Your transmission log in {ConfigStore.LogDirectory} is not touched.");
 
         if (!confirmed)
         {
@@ -233,48 +261,9 @@ public partial class App : Application
             detail: "Serial port, display rows, alarm thresholds and window positions. Keeping them "
                   + "means a later reinstall picks up exactly where you left off.");
 
-        var removeLogs = await ConfirmDialog.ShowAsync(
-            _mainWindow,
-            "Transmission log",
-            "Also delete your transmission log?",
-            affirmative: "Delete the log",
-            negative: "Keep the log",
-            detail: TransmissionLogWarning(),
-            danger: true);
-
         _uninstalling = true;
-        InstallService.Uninstall(new UninstallOptions(removeSettings, removeLogs));
+        InstallService.Uninstall(new UninstallOptions(removeSettings));
         _mainWindow.Close();
-    }
-
-    /// <summary>
-    /// Spell out what deleting the log actually costs, in overs rather than in filenames — "1,284
-    /// transmissions" is a decision someone can make; "TXlog.csv" is not.
-    /// </summary>
-    private static string TransmissionLogWarning()
-    {
-        var where = ConfigStore.DataDir;
-        var count = CountLoggedOvers();
-        var what = count > 0
-            ? $"This is your record of {count:N0} transmission{(count == 1 ? "" : "s")} — frequency, "
-            + "power, SWR and impedance for every over you have logged."
-            : "This is your record of every over you have logged.";
-
-        return what + " It cannot be recovered, and it is what the planned impedance-signature "
-             + $"analysis is built on.\n\nKeeping it leaves the files in {where}, where a later "
-             + "install will find them again.";
-    }
-
-    private static int CountLoggedOvers()
-    {
-        try
-        {
-            var path = ConfigStore.LogFilePath;
-            if (!File.Exists(path)) return 0;
-            // Rows minus the header; blank trailing lines don't count.
-            return Math.Max(0, File.ReadLines(path).Count(l => !string.IsNullOrWhiteSpace(l)) - 1);
-        }
-        catch { return 0; }
     }
 
     /// <summary>A child window is closing; capture its bounds and drop the reference.</summary>

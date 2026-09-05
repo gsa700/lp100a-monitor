@@ -3,8 +3,8 @@
 Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wattmeter.
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
-**.NET 10 + Avalonia 12.1.0**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **1.0.0-beta**.
+**.NET 10 + Avalonia 12.1.2**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
+By David Erickson (AB0R). Status: **1.0.0-beta2**.
 
 This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
@@ -175,12 +175,19 @@ and none escaped it; the one untested lever is an Authenticode signature. The re
 one commit back in history (v0.9.22-beta) if that ever happens. Removal lives on Setup → Updates
 instead, running the same flow as `--uninstall`. The full ruled-out list is in W2's `BACKLOG.md`.
 
-**The transmission log is not app data.** `ConfigStore.DataDir` holds `config.json` *and*
-`TXlog.csv` plus its archives. Uninstall asks about them separately, both defaulting to keep, and
-the log prompt states how many transmissions are at stake rather than naming a file. **No
-command-line switch deletes the log** — only a person answering that prompt, so nothing a shortcut
-or the installed-apps entry carries can destroy operating history. This mirrors the rule
-`TxLogWriter` already follows: archive aside, never delete.
+**The transmission log is not app data, and since v1.0.0-beta2 it doesn't live with it.**
+`ConfigStore.DataDir` (`%APPDATA%\Lp100aMonitor`, `~/.config/Lp100aMonitor`) holds `config.json`
+only. The log and its `TXlog_<stamp>.csv` archives live in `ConfigStore.LogDirectory` —
+`Documents\LP-100A Monitor` — because they are operating history: the thing you open in a
+spreadsheet, keep for years and expect to be backed up, none of which describes app data. On Linux
+that is `XDG_DOCUMENTS_DIR` read from `user-dirs.dirs` (`XdgUserDirs`, Core, tested), falling back to
+`~/Documents`; .NET's `MyDocuments` there is just `$HOME`, which would have dropped a CSV into the top
+of the home directory. **Uninstall cannot reach the log at all** — it deletes nothing outside the app's
+own folders — which is a better guarantee than the keep/delete prompt it replaced. An existing log is
+brought across on first start by `TxLogRelocator`: copy, SHA-256 verify, then delete the original,
+per file; a name clash leaves both copies and says so; the file-selection rules are
+`TxLogRelocationPlan` (Core, tested) so the part that could lose data isn't trusted to eyeballing.
+`TxLogWriter`'s own rule is unchanged: archive aside, never delete.
 
 **Linux/Pi uses the same detection**, differing only in paths and in what "register" means:
 `~/.local/share/lp100a-monitor/` for the binary (lower-case and hyphenated per XDG — and free of the

@@ -10,13 +10,14 @@ namespace Lp100a.App.Services;
 
 /// <summary>What an uninstall should take with it besides the program itself.</summary>
 /// <param name="RemoveSettings">Delete <c>config.json</c>. Trivially recreated by reconfiguring.</param>
-/// <param name="RemoveLogs">
-/// Delete <c>TXlog.csv</c> and its archives. Asked separately from settings and defaulted to
-/// false on purpose — the log is operating history, not app state, and nothing can bring it back.
-/// <see cref="Lp100a.Core.TxLogWriter"/> already refuses to delete a log even when clearing it;
-/// removal must not be an easier mistake to make from here.
-/// </param>
-public readonly record struct UninstallOptions(bool RemoveSettings, bool RemoveLogs);
+/// <remarks>
+/// There is no option for the transmission log, on purpose. It lives in Documents, which this app
+/// does not own and never deletes from, so uninstall cannot reach it by construction. That replaced
+/// a separate keep/delete prompt in v1.0.0-beta2: a dialog guards a hazard, while an unreachable
+/// file has none. <see cref="Lp100a.Core.TxLogWriter"/> follows the same principle — archive aside,
+/// never delete.
+/// </remarks>
+public readonly record struct UninstallOptions(bool RemoveSettings);
 
 /// <summary>Outcome of an install.</summary>
 /// <param name="ExePath">The installed executable.</param>
@@ -128,9 +129,9 @@ public static class InstallService
     /// </summary>
     /// <remarks>
     /// Copying only the executable is sufficient because the published build is self-contained and
-    /// single-file — there is no payload beside it to keep in step. Settings and the transmission
-    /// log already live in <see cref="AppConfig.DataDir"/>, so an install picks up whatever was
-    /// there before and an uninstall can leave it behind.
+    /// single-file — there is no payload beside it to keep in step. Settings live in
+    /// <see cref="ConfigStore.DataDir"/> and the transmission log in <see cref="ConfigStore.LogDirectory"/>,
+    /// so an install picks up whatever was there before and an uninstall leaves both behind.
     /// </remarks>
     public static InstallResult Install()
     {
@@ -341,29 +342,16 @@ public static class InstallService
     private static string ShellQuote(string path) => "'" + path.Replace("'", "'\\''") + "'";
 
     /// <summary>
-    /// Which files under the data directory an uninstall should take. The directory itself is never
-    /// removed wholesale: settings and irreplaceable operating history share it, and only the files
-    /// actually consented to are listed.
+    /// Which files under the data directory an uninstall should take. Named, never swept: the
+    /// directory itself is not removed, so anything a later version puts there — or a log that a
+    /// failed relocation left behind — survives an older uninstall.
     /// </summary>
     public static IEnumerable<string> DataFilesToRemove(UninstallOptions options)
     {
-        var dir = ConfigStore.DataDir;
-
         if (options.RemoveSettings)
         {
-            var config = Path.Combine(dir, "config.json");
+            var config = Path.Combine(ConfigStore.DataDir, "config.json");
             if (File.Exists(config)) yield return config;
-        }
-
-        if (options.RemoveLogs && Directory.Exists(dir))
-        {
-            // The live log plus every archive "Clear log" has set aside beside it. The pattern is
-            // derived from the real log path rather than spelled out, so renaming the log can't
-            // quietly leave archives behind.
-            var log = ConfigStore.LogFilePath;
-            var pattern = Path.GetFileNameWithoutExtension(log) + "*" + Path.GetExtension(log);
-            foreach (var f in Directory.EnumerateFiles(dir, pattern))
-                yield return f;
         }
     }
 

@@ -172,6 +172,8 @@
                      TextWrapping="Wrap" FontSize="12"/>
           <TextBlock Text="One row per over: time, duration, peak power, worst SWR, and SWR + R+jX sampled at peak power. Frequency fills in once a radio (CAT) is linked."
                      Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" FontSize="12"/>
+          <TextBlock Text="{Binding LogLocationText}" Foreground="{StaticResource DimBrush}"
+                     TextWrapping="Wrap" FontSize="12"/>
 
         </StackPanel>
       </ScrollViewer>

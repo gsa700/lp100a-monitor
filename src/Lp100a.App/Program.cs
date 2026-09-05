@@ -51,7 +51,7 @@ internal static class Program
                 // history can only be removed by someone answering a prompt about it, never by a
                 // command line that a shortcut or the installed-apps entry could carry.
                 case InstallAction.Uninstall when request.Quiet:
-                    InstallService.Uninstall(new UninstallOptions(RemoveSettings: false, RemoveLogs: false));
+                    InstallService.Uninstall(new UninstallOptions(RemoveSettings: false));
                     return;
 
                 case InstallAction.Uninstall:

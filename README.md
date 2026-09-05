@@ -7,7 +7,7 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **1.0.0-beta** — real and in use, but not yet broadly field-tested.
+> Status: **1.0.0-beta2** — real and in use, but not yet broadly field-tested.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"
@@ -33,14 +33,14 @@ Explorer — so an entry there would be written and then not be there. Removal l
 instead: **Setup → Updates → Remove LP-100A Monitor…**.
 
 Don't want it installed? Put a file named `portable.txt` beside the program. It then runs where it
-stands, registers nothing, and stops asking. Your settings and transmission log still live in your
-user profile either way, so this is a way to skip installing rather than a leave-no-trace mode.
+stands, registers nothing, and stops asking. Your settings still live in your user profile and your
+transmission log in Documents either way, so this is a way to skip installing rather than a
+leave-no-trace mode.
 Delete that file if you later want it to install normally.
 
 To remove it: **Setup → Updates → Remove LP-100A Monitor…** on any platform, or run
-`lp100a-monitor --uninstall` on Linux. It asks about your settings and your transmission log
-**separately**, and keeps both unless you say otherwise — the log is your operating history and
-can't be recovered.
+`lp100a-monitor --uninstall` on Linux. It asks whether to keep your settings. It never touches your
+transmission log: that lives in Documents, and the app deletes nothing outside its own folders.
 
 Then open **Setup**, pick the LP-100A's COM/serial port, and Connect. The
 app pins that adapter by its chip serial and **auto-connects** next time. Keep the
@@ -92,10 +92,15 @@ numbers actually mean something.
 
 An over is closed only on a *confirmed* key-up, so a serial dropout mid-transmission
 can't split one over into two or cut it short. The log is capped to a rolling 2000 rows
-at `%AppData%\Lp100aMonitor\TXlog.csv` (Windows) or `~/.config/Lp100aMonitor/TXlog.csv`
-(Linux). **View log** shows it in-app, sorted however you like; **Open CSV** hands the
-file to whatever your system opens `.csv` with, and **Clear log** starts a fresh one —
-renaming the old to `TXlog_<timestamp>.csv` rather than deleting it.
+at `Documents\LP-100A Monitor\TXlog.csv` (Windows) or `~/Documents/LP-100A Monitor/TXlog.csv`
+(Linux — or wherever your XDG documents folder points). It's in Documents rather than the
+app's data folder because it's your operating history: the file you open in a spreadsheet,
+keep for years, and want backed up. Setup → Logging shows the exact location, and a log from
+a version before 1.0.0-beta2 is moved there automatically on first start.
+
+**View log** shows it in-app, sorted however you like; **Open CSV** hands the file to
+whatever your system opens `.csv` with, and **Clear log** starts a fresh one — renaming the
+old to `TXlog_<timestamp>.csv` beside it rather than deleting it.
 
 <p align="center">
   <img src="docs/screenshot-log.png" width="900"

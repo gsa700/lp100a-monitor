@@ -5,6 +5,23 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [1.0.0-beta2] - 2026-09-04
+
+### Changed
+- **The transmission log moves to Documents.** It now lives in `Documents\LP-100A Monitor\TXlog.csv`
+  (Linux: your XDG documents folder, normally `~/Documents/LP-100A Monitor/`), with the archives
+  **Clear log** sets aside kept beside it. It was in the app's hidden data folder, which is the wrong
+  place for a file you open in a spreadsheet, keep for years, and would want backed up — Documents
+  is backed up on most machines; `%APPDATA%` usually isn't. Setup → Logging now shows where it is.
+- **An existing log is moved for you on first start**, one file at a time: copy, verify the copy is
+  byte-identical, and only then remove the original. Anything that can't be moved stays exactly
+  where it was and you're told. If a file of the same name already exists in the new folder, both
+  are left untouched for you to compare rather than either being overwritten.
+- **Uninstall no longer asks about the log**, because it can no longer reach it — the app deletes
+  nothing outside its own folders, and Documents is yours. That's a stronger guarantee than the
+  keep/delete prompt it replaces: a dialog guards a hazard, an unreachable file has none. Uninstall
+  still asks about settings.
+
 ## [1.0.0-beta] - 2026-09-04
 
 The first 1.0 beta. The app has been in daily use since July; what marks this release is that the

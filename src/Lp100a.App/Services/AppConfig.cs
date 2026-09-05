@@ -112,7 +112,11 @@ public static class ConfigStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
-    /// <summary>Per-user app-data directory (created on access). Home for config + the TX log.</summary>
+    /// <summary>
+    /// Per-user app-data directory (created on access). Home for <c>config.json</c> — app state the
+    /// user never needs to see. The transmission log used to live here too and doesn't any more; see
+    /// <see cref="LogDirectory"/>.
+    /// </summary>
     public static string DataDir
     {
         get
@@ -125,8 +129,55 @@ public static class ConfigStore
         }
     }
 
+    /// <summary>File name of the per-transmission CSV log; archives are <c>TXlog_&lt;stamp&gt;.csv</c> beside it.</summary>
+    public const string LogFileName = "TXlog.csv";
+
+    /// <summary>
+    /// Where the transmission log lives: a folder of its own under the user's Documents (created on
+    /// access). Documents rather than app data because the log is operating history, not app state —
+    /// the thing you open in a spreadsheet, keep for years and expect to be backed up, none of which
+    /// is true of <c>%APPDATA%</c>. It also puts the log out of uninstall's reach by construction
+    /// rather than by a dialog.
+    /// </summary>
+    /// <remarks>
+    /// On Linux this reads <c>XDG_DOCUMENTS_DIR</c> from <c>user-dirs.dirs</c>, because .NET's
+    /// <c>MyDocuments</c> there is just <c>$HOME</c>; a machine with no documents directory configured
+    /// (a headless Pi) gets <c>~/Documents</c>, created rather than a CSV dropped into the top of home.
+    /// </remarks>
+    public static string LogDirectory
+    {
+        get
+        {
+            var dir = System.IO.Path.Combine(DocumentsDirectory(), "LP-100A Monitor");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+    }
+
     /// <summary>Path of the per-transmission CSV log.</summary>
-    public static string LogFilePath => System.IO.Path.Combine(DataDir, "TXlog.csv");
+    public static string LogFilePath => System.IO.Path.Combine(LogDirectory, LogFileName);
+
+    private static string DocumentsDirectory()
+    {
+        if (OperatingSystem.IsWindows())
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        if (string.IsNullOrEmpty(configHome)) configHome = System.IO.Path.Combine(home, ".config");
+
+        string? contents = null;
+        try
+        {
+            var f = System.IO.Path.Combine(configHome, "user-dirs.dirs");
+            if (File.Exists(f)) contents = File.ReadAllText(f);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+
+        return Lp100a.Core.XdgUserDirs.Resolve(contents, Lp100a.Core.XdgUserDirs.DocumentsKey, home)
+            ?? System.IO.Path.Combine(home, "Documents");
+    }
 
     private static string Path => System.IO.Path.Combine(DataDir, "config.json");
 
