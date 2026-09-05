@@ -129,7 +129,9 @@ For dual-coupler/SO2R later: one rigctld endpoint per radio + `\get_ptt` to tell
 
 `gh` is installed and authed as `gsa700`. Release = git tag + self-contained zips for
 win-x64 / linux-x64 / linux-arm64 attached to a GitHub release (asset names must match the
-updater's expectations). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
+updater's expectations). **Title the release with the tag alone** — `v1.0.0-beta3`, nothing
+appended. GitHub truncates a `vX.Y.Z — what changed` title mid-phrase and it reads worse than the
+bare version; the notes are where the summary goes (David's call, 2026-09-04). Update `CHANGELOG.md` each release. Open/parked backlog: data logging
 (the UI-free `Core` enables it) and multi-unit support.
 
 ## Self-install (Windows and Linux)
