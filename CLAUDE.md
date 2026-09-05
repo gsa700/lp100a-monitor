@@ -4,7 +4,7 @@ Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wa
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
 **.NET 10 + Avalonia 12.1.2**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **1.0.0-beta2**.
+By David Erickson (AB0R). Status: **1.0.0-beta3**.
 
 This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
@@ -205,6 +205,21 @@ go recursively, but `~/.local/bin`, the icon theme and `~/.local/share/applicati
 the system — nothing may delete a directory it does not own. Getting this wrong on Linux means
 deleting every user binary on the machine, so keep new removals in `Unregister`'s file-at-a-time
 form.
+
+**Three rules the uninstall path learned on 2026-09-04, each from a real failure.** (1) *Never close
+the app from inside a dialog's click.* Every `ConfirmDialog` answer is a continuation running inside
+the mouse-release that pressed the button; closing the main window there — which tears down the
+dialog, its owner and the owned Setup window mid-delivery — left a windowless process that never
+exited. `CloseMainWhenIdle` posts the close at Background priority instead. Reproduced only with real
+pointer input; UIA `Invoke` (no pointer event) never hung, which is the discriminator that found it.
+The harness is `repro-remove-click.ps1` in the session scratchpad — UIA-driven, DPI-aware, real
+clicks. (2) *The uninstall helper gets its own working directory.* It inherited the app's, which since
+the 0.9.20 launch fix is the install folder, and a process cannot remove the directory it stands in —
+files gone, empty folder left. `Path.GetTempPath()`. (3) *The helper retries the delete for ten
+seconds.* A one-shot delete can land between the PID vanishing and the exe mapping being released.
+An uninstalling process also arms `Environment.Exit(0)` three seconds after cleanup as a backstop:
+the helper is waiting on that PID and nothing in the process is worth preserving by then. **W2 shares
+all three** and should get the same treatment.
 
 **Uninstall leaves the single-file extraction directory behind** *(found via the W2 port on the CM5,
 2026-08-02; open here)*. A self-contained single-file build unpacks its native libraries to

@@ -321,6 +321,12 @@ public static class InstallService
                 Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
+                // The helper must not inherit this process's working directory: an installed copy
+                // runs with its own folder as the working directory, and Windows will not remove a
+                // directory that is any live process's current directory — including the one doing
+                // the removing. Without this the helper deletes the files and then fails on the
+                // folder itself, every time, from inside it (2026-09-04).
+                WorkingDirectory = Path.GetTempPath(),
             });
         }
         else
@@ -341,6 +347,10 @@ public static class InstallService
                 FileName = "/bin/sh",
                 ArgumentList = { script },
                 UseShellExecute = false,
+                // Same reason as the Windows branch. Linux will unlink a directory that is a
+                // process's cwd, but the helper then sits in a deleted directory, and nothing
+                // about that is worth keeping.
+                WorkingDirectory = Path.GetTempPath(),
             });
         }
     }

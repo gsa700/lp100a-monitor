@@ -215,7 +215,7 @@ public partial class App : Application
             InstallService.LaunchDetached(installed.ExePath);
             // Closing runs the normal save path on purpose, so settings carry over to the
             // installed copy, which reads the same per-user data directory.
-            _mainWindow.Close();
+            CloseMainWhenIdle();
             return true;
         }
         catch (Exception ex)
@@ -248,7 +248,7 @@ public partial class App : Application
 
         if (!confirmed)
         {
-            _mainWindow.Close();
+            CloseMainWhenIdle();
             return;
         }
 
@@ -263,8 +263,26 @@ public partial class App : Application
 
         _uninstalling = true;
         InstallService.Uninstall(new UninstallOptions(removeSettings));
-        _mainWindow.Close();
+        CloseMainWhenIdle();
     }
+
+    /// <summary>
+    /// Close the main window — and with it the app — from a later dispatcher frame, never from
+    /// inside the input event that is still being delivered.
+    /// </summary>
+    /// <remarks>
+    /// Every caller here runs as the continuation of a <see cref="ConfirmDialog"/> answer, which is
+    /// to say inside the mouse-release that clicked the dialog's button. Closing every window from
+    /// in there — the dialog, its owner, the owner's owned Setup window — left a windowless process
+    /// that never exited (2026-09-04): the shutdown was requested from inside pointer delivery to a
+    /// window tree being torn down, and the message loop never got out. Reproduced deterministically
+    /// with real mouse clicks; the identical sequence driven by UI Automation's Invoke, which raises
+    /// Click without any pointer event, exited in 0.2 s every time. Background priority runs after
+    /// all pending input has been processed, which is the whole point.
+    /// </remarks>
+    private void CloseMainWhenIdle() =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => _mainWindow.Close(),
+            Avalonia.Threading.DispatcherPriority.Background);
 
     /// <summary>A child window is closing; capture its bounds and drop the reference.</summary>
     public void NotifySetupClosing(SetupWindow w)
@@ -388,6 +406,13 @@ public partial class App : Application
             _logging.Dispose();
             _frequency.Dispose();
             _meter.Dispose();
+
+            // An uninstall run must end, whatever the UI framework does next: the helper deletes the
+            // install folder only once this process is gone, so a process that closes its windows and
+            // then lingers leaves the program half-removed with nothing on screen to explain it
+            // (2026-09-04). Give the normal shutdown a moment to finish, then leave regardless.
+            // Everything worth saving has been disposed above; there is nothing to lose here.
+            _ = Task.Delay(3000).ContinueWith(_ => Environment.Exit(0));
             return;
         }
 

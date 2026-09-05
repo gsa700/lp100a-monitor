@@ -5,6 +5,29 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [1.0.0-beta3] - 2026-09-04
+
+### Fixed
+- **Remove from Setup could leave the app running invisibly, with nothing removed.** Clicking
+  through the Remove dialogs closed every window and then the process simply stayed alive —
+  windowless, idle, and holding the program open, so the helper waiting to delete it waited
+  forever. It only happened with a real mouse click on the dialog's button: the whole shutdown was
+  being run from inside that click, while the window it landed on was being torn down, and the
+  message loop never came back. The same sequence driven without pointer input exited in a fifth
+  of a second every time, which is how it was cornered. The app now closes from an idle moment
+  after the click has been fully dealt with — and an uninstall run now guarantees its own exit a
+  few seconds after cleanup regardless, because a process the uninstaller is waiting on must never
+  be able to linger.
+- **Uninstall could delete the program and then leave its empty folder behind.** The helper that
+  removes the folder inherited the app's working directory — which, since 1.0.0-beta's launch fix,
+  *is* that folder — and Windows will not remove a directory that any process is standing in,
+  including the one doing the removing. The helper now starts from the temp directory. It also
+  retries for up to ten seconds instead of trying once and giving up silently, which covers the
+  other way this went wrong: running in the instant between the process vanishing and Windows
+  releasing its executable.
+- The Remove description on Setup → Updates still said you'd be asked about the transmission log,
+  which stopped being true in 1.0.0-beta2.
+
 ## [1.0.0-beta2] - 2026-09-04
 
 ### Changed
