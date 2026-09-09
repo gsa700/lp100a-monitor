@@ -5,7 +5,7 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
-## [Unreleased]
+## [1.0.0-beta4] - 2026-09-09
 
 ### Fixed
 - **On Linux, the meter is now followed when its port renumbers.** The app pinned the adapter by its
