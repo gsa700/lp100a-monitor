@@ -103,6 +103,11 @@
             <CheckBox Content="Show vector window" IsChecked="{Binding Display.ShowVectorWindow}" Margin="0,3"/>
             <CheckBox Content="Always on top"      IsChecked="{Binding Display.AlwaysOnTop}" Margin="0,3"/>
           </UniformGrid>
+          <!-- Kept visible everywhere on purpose: it works on Windows and GNOME (via XWayland) and
+               fails only where the compositor's X11 WM ignores the hint, which an X11 client cannot
+               detect. Hiding it on "Wayland" would remove a working feature from every GNOME user. -->
+          <TextBlock Text="Always on top may not take effect on some Linux desktops."
+                     Foreground="{StaticResource DimBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
 
         </StackPanel>
       </ScrollViewer>

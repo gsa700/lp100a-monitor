@@ -6,22 +6,57 @@ using Lp100a.Core;
 namespace Lp100a.App.Services;
 
 /// <summary>
-/// Pins a USB-serial adapter by its chip serial number instead of its COM number, so the
-/// LP-100A keeps working when Windows renumbers the port. Windows-only (WMI); on other
-/// platforms every method is a graceful no-op and we just use the saved COM name.
-/// Mirrors W2 Monitor's FTDI pinning, with a generic USB fallback.
+/// Pins the LP-100A's USB-serial adapter by a stable identity instead of its volatile port name,
+/// so the meter keeps working when the OS renumbers the port. Mirrors W2 Monitor's pinning.
+///
+/// - Windows: id = the adapter's chip serial (WMI); port = COMx.
+/// - Linux/Pi: id = the <c>/dev/serial/by-id/*</c> name, which udev keeps stable per cable;
+///   port = the <c>/dev/ttyUSB*</c> it currently links to. Note this is the whole by-id name, not a
+///   serial pulled out of it — udev's rendering of an FTDI serial is 8 characters where Windows
+///   reports 9, and nothing here ever compares the two, because each machine keeps its own config.
+/// - Anything else: no map, and every method falls back gracefully to the saved port name.
+///
+/// Until 2026-09-09 the Linux half was missing entirely: the map was empty off Windows, so a Linux
+/// install reconnected by the saved <c>/dev/ttyUSB0</c> and lost the meter on any renumber — and the
+/// serial supervisor's re-resolve delegate had nothing to resolve with.
 /// </summary>
 public static class PortIdentity
 {
     private static readonly Regex ComName = new(@"\((COM\d+)\)", RegexOptions.Compiled);
+    private const string ByIdDir = "/dev/serial/by-id";
 
-    /// <summary>COM name -> adapter serial for every port that reports a stable serial.</summary>
+    /// <summary>Current port name -> stable adapter id, for every port that has one.</summary>
     public static Dictionary<string, string> GetMap()
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (!OperatingSystem.IsWindows()) return map;
-        try { PopulateWindows(map); } catch { /* WMI unavailable */ }
+        try
+        {
+            if (OperatingSystem.IsWindows()) PopulateWindows(map);
+            else if (OperatingSystem.IsLinux()) PopulateLinux(map);
+        }
+        catch { /* WMI or /dev unavailable — fall back to the saved port name */ }
         return map;
+    }
+
+    /// <summary>
+    /// Each <c>/dev/serial/by-id/*</c> entry is a stable symlink to the volatile <c>/dev/ttyUSB*</c>
+    /// or <c>ttyACM*</c>. Map {resolved tty -> by-id name} so the name pins the cable across a renumber.
+    /// </summary>
+    private static void PopulateLinux(Dictionary<string, string> map)
+    {
+        if (!Directory.Exists(ByIdDir)) return;
+        foreach (var link in Directory.GetFileSystemEntries(ByIdDir))
+        {
+            // Guard each entry: a dangling symlink, or a device torn down mid-enumeration, makes
+            // ResolveLinkTarget throw. Without this one bad entry would abort the loop and drop every
+            // adapter after it — the exact failure by-id pinning exists to prevent. (W2 hit this.)
+            try
+            {
+                var target = File.ResolveLinkTarget(link, returnFinalTarget: true)?.FullName;
+                if (target is not null) map[target] = Path.GetFileName(link);
+            }
+            catch { /* skip this entry, keep the rest */ }
+        }
     }
 
     [SupportedOSPlatform("windows")]

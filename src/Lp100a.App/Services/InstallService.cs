@@ -65,6 +65,23 @@ public static class InstallService
 
     public static string ExeFileName => OperatingSystem.IsWindows() ? "Lp100aMonitor.exe" : "Lp100aMonitor";
 
+    /// <summary>
+    /// Where the .NET single-file host unpacks this app's native libraries. Honours the host's own
+    /// override variable, since that is what decides the location if it is set.
+    /// </summary>
+    private static string ExtractionRoot
+    {
+        get
+        {
+            var basе = Environment.GetEnvironmentVariable("DOTNET_BUNDLE_EXTRACT_BASE_DIR");
+            if (string.IsNullOrEmpty(basе))
+                basе = OperatingSystem.IsWindows()
+                    ? Path.Combine(Path.GetTempPath(), ".net")
+                    : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".net");
+            return Path.Combine(basе, "Lp100aMonitor");
+        }
+    }
+
     /// <summary>Full path of the running executable.</summary>
     public static string ExePath => Environment.ProcessPath
         ?? throw new InvalidOperationException("Cannot determine the current executable path.");
@@ -289,6 +306,14 @@ public static class InstallService
         var toDelete = new List<string>();
         if (InstallLayout.OwnsExeDirectory(Mode)) toDelete.Add(ExeDirectory);
         toDelete.AddRange(DataFilesToRemove(options));
+
+        // The .NET host unpacks a self-contained single-file build's native libraries into a
+        // per-build directory under $HOME/.net/<AppName>/ on Linux and %TEMP%\.net\<AppName>\ on
+        // Windows, and never removes any of them — one accumulates per distinct binary ever launched
+        // (263 MB across 15 on the Windows box when measured). The path is the host's choice, so the
+        // app's whole subtree is the honest scope, and it has to be the helper that removes it: this
+        // running copy is holding its own extraction directory open right now.
+        toDelete.Add(ExtractionRoot);
 
         var pid = Environment.ProcessId;
 
