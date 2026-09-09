@@ -273,7 +273,7 @@ Two consequences, both of which have already bitten on the W2 side:
   what the other is doing right now. On 2026-08-02 two sessions edited the W2 backlog within minutes of
   each other and it merged cleanly only because they happened to touch different sections.
 
-## Queued from the W2 port: one fix left (noted 2026-07-30, updated 2026-09-04)
+## Queued from the W2 port: two items left (noted 2026-07-30, updated 2026-09-09)
 
 The W2 port took this app's installer and tabbed Setup and hit several things worth bringing back.
 **These have shipped here** — don't redo them:
@@ -300,6 +300,25 @@ Also worth knowing, though it needs no change here: **`APPDATA` does not isolate
 .NET resolves `SpecialFolder.ApplicationData` through the known-folder API and ignores the environment
 variable, so redirecting it before a smoke test protects nothing. Force-kill the test instance instead,
 so it never reaches save-on-exit. `HOME`/`XDG_CONFIG_HOME` on Linux do work.
+
+**"Always on top": leave the checkbox visible, add a one-line note — don't hide it on Wayland.**
+Settled by test across three boxes on 2026-09-09 (W2 session; full evidence in
+`w2-monitor-x/BACKLOG.md`, the Always-on-top item). It works on Windows and on **Fedora 44 / GNOME**
+— this app included, both set *and* unset — and fails only on the Pi CM5 under labwc. The reason is
+not "Wayland": on a GNOME Wayland session Avalonia runs as an X11 client under XWayland, and Mutter
+honours `_NET_WM_STATE_ABOVE` for X11 clients while labwc's XWayland WM does not. So the discriminator
+is whose XWayland the app lands in, and there is no honest runtime test — an X11 client can set the
+hint but cannot read back whether the WM obeyed it. Hiding the control on "Wayland" would remove a
+working feature from every GNOME user. Fix: keep it visible everywhere with *"may not take effect on
+some Linux desktops"* beside it. One line of XAML on the Display tab.
+
+**Field report, Fedora 44 x64, 2026-09-07 → 09-09 (from the W2 session, applies here).** Rendering
+is smooth and by David's eye indistinguishable from Windows — the first real answer to the Linux
+render question. W2 ran 45 h continuous there with no crash log. **Both W2s and this LP-100A are
+physically on that box** (`TestbedLinux`, 10.0.1.193, user `derickson`, SSH by key from HAMBENCH), so
+the hardware for verifying this app's Linux install and serial paths — which the section above still
+calls unverified on hardware — is sitting on a Linux machine right now. Note Linux `by-id` shows the
+FTDI serial as 8 characters (`ABSCDI99`, not `ABSCDI99A`).
 
 ## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
