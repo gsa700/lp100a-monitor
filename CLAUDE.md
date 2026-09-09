@@ -331,9 +331,10 @@ some Linux desktops"* beside it. One line of XAML on the Display tab.
 is smooth and by David's eye indistinguishable from Windows — the first real answer to the Linux
 render question. W2 ran 45 h continuous there with no crash log. **Both W2s and this LP-100A are
 physically on that box** (`TestbedLinux`, 10.0.1.193, user `derickson`, SSH by key from HAMBENCH), so
-the hardware for verifying this app's Linux install and serial paths — which the section above still
-calls unverified on hardware — is sitting on a Linux machine right now. Note Linux `by-id` shows the
-FTDI serial as 8 characters (`ABSCDI99`, not `ABSCDI99A`).
+the hardware for verifying this app's Linux install and serial paths was sitting on a Linux machine —
+and on 2026-09-09 it was used for exactly that; see *Self-install* above. Note Linux `by-id` shows the
+FTDI serial as 8 characters (`ABSCDI99`, not `ABSCDI99A`); harmless, because the Linux pin is the whole
+by-id name and each machine keeps its own config, so the two forms are never compared.
 
 ## The .NET 10 + Avalonia 12 migration (2026-07-28)
 
