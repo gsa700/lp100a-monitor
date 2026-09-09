@@ -5,6 +5,25 @@ All notable changes to **LP-100A Monitor** are documented here.
 This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
 
+## [Unreleased]
+
+### Fixed
+- **On Linux, the meter is now followed when its port renumbers.** The app pinned the adapter by its
+  chip serial on Windows only; on Linux it reconnected by the saved `/dev/ttyUSB*` name, which changes
+  whenever USB devices are re-enumerated — a config saved on 7 September still said `ttyUSB0` while
+  the meter had moved to `ttyUSB6`. It now pins by the `/dev/serial/by-id` name, as W2 Monitor does,
+  and on Fedora 44 opened the right port from a deliberately stale saved one on the first launch.
+- **Removing the program now removes the folders the .NET runtime unpacks into.** A self-contained
+  build extracts its native libraries to `$HOME/.net/Lp100aMonitor/` on Linux, or
+  `%TEMP%\.net\Lp100aMonitor\` on Windows, one folder per build ever launched, and nothing cleaned
+  them up — 263 MB across 15 folders on one machine. Uninstall takes them with it.
+
+### Changed
+- **"Always on top" now says it may not take effect on some Linux desktops.** It works on Windows and
+  on GNOME, and fails only where the desktop's compositor ignores the request — the Pi's labwc — which
+  the app has no way to detect. So the option stays visible everywhere, with a note, rather than
+  vanishing on Wayland and taking a working feature from every GNOME user.
+
 ## [1.0.0-beta3] - 2026-09-04
 
 ### Fixed

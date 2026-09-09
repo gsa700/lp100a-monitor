@@ -115,7 +115,10 @@ For dual-coupler/SO2R later: one rigctld endpoint per radio + `\get_ptt` to tell
 
 ## Config & updater
 
-- App auto-connects the saved port, pinned by its adapter chip serial.
+- App auto-connects the saved port, pinned by the adapter's stable identity — the chip serial on
+  Windows, the `/dev/serial/by-id` name on Linux (`PortIdentity`). The Linux half only arrived on
+  2026-09-09; before that a Linux install reconnected by the saved `/dev/ttyUSB*` name and lost the
+  meter on any renumber.
 - In-app updater (`UpdateService`) targets GitHub `gsa700/lp100a-monitor`, `Setup → Updates`.
   Confirmed working on Windows and Linux/CM5.
 - **Version ordering is `VersionOrder` (Core, tested), not `System.Version`.** Tags and assembly
@@ -224,7 +227,9 @@ the helper is waiting on that PID and nothing in the process is worth preserving
 all three** and should get the same treatment.
 
 **Uninstall leaves the single-file extraction directory behind** *(found via the W2 port on the CM5,
-2026-08-02; open here)*. A self-contained single-file build unpacks its native libraries to
+2026-08-02; **fixed here 2026-09-09** — `Uninstall` adds `$HOME/.net/Lp100aMonitor`, or
+`%TEMP%\.net\Lp100aMonitor` on Windows, honouring `DOTNET_BUNDLE_EXTRACT_BASE_DIR`, to the helper's
+delete list; verified gone after an uninstall on Fedora)*. A self-contained single-file build unpacks its native libraries to
 `$HOME/.net/<AppName>/<hash>/` on Linux and `%TEMP%\.net\…` on Windows, and `Uninstall` knows nothing
 about either. The hash changes with every build, so they accumulate one per distinct binary ever
 launched. Measured for this app: **263 MB across 15 directories** on the Windows box and 10 more on
@@ -238,18 +243,28 @@ rather than in `Unregister`. Note the platforms differ in kind — on Windows th
 which Storage Sense can reclaim, while on Linux `$HOME/.net/` is swept by nothing, so **fix the Linux
 side first** if the two are ever separated.
 
-> **Linux is unverified on hardware *here*.** It compiles, publishes for linux-x64/arm64, and its pure
-> logic is unit-tested, but no part of this app's filesystem work — icon extraction, `.desktop` write,
-> symlink, `chmod`, the `sh` uninstall trampoline — has run on a real Linux box. The CM5 is the place
-> to find out. The Windows path is verified end to end.
+> **Linux verified on hardware, 2026-09-09 — Fedora 44 (`TestbedLinux`), from a published linux-x64
+> build.** Install from a loose copy: the exe lands `rwxr-xr-x`, the `.desktop` passes
+> `desktop-file-validate`, icon and `~/.local/bin` symlink written. Uninstall driven from the
+> *installed* copy: install directory, entry, icon and symlink gone; the other two symlinks in
+> `~/.local/bin` untouched; `config.json` and `~/Documents/LP-100A Monitor` untouched; the `sh` helper
+> removed itself — and `$HOME/.net/Lp100aMonitor` gone with it (the extraction-directory item above).
+> Then launched into the GNOME session and connected to the meter. Windows was verified end to end on
+> 2026-09-04, so both platforms now are.
 >
-> *What the W2 port has since established, 2026-08-02:* it took this pattern and ran the whole thing on
-> the CM5 — install, `.desktop` write, icon, symlink, `chmod` (both artifacts land `rwxr-xr-x`), and an
-> uninstall driven from an installed **published** build, with the generated script captured before it
-> deleted itself. The trampoline's critical property held: exactly one `rm -rf`, aimed at the install
-> directory alone, with `~/.local/bin`, the icon theme and `~/.local/share/applications` untouched. So
-> the *shape* is proven on hardware. What remains unproven for this app is its own paths and names, and
-> the concerns the W2 port does not share — chiefly that uninstall here must protect `TXlog.csv`.
+> Two things that made the pass possible, for next time. A GUI app launched from SSH dies with
+> `XOpenDisplay failed` — no `XAUTHORITY` for XWayland. Run it inside the session's user manager, which
+> carries the display variables: export `XDG_RUNTIME_DIR=/run/user/1000` and
+> `DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`, then
+> `systemd-run --user --unit=<name> --collect <exe>`. And a serial connection can be proven with nobody
+> at the screen: `ls -l /proc/<pid>/fd | grep /dev/tty` shows the port actually opened, and `rchar` in
+> `/proc/<pid>/io` climbing over a few seconds shows the meter answering.
+>
+> *History:* the W2 port ran the same pattern on the CM5 on 2026-08-02 — install, `.desktop`, icon,
+> symlink, `chmod`, and an uninstall from an installed published build with the script captured before
+> it deleted itself (exactly one `rm -rf`, aimed at the install directory alone). This app's own paths
+> and names, and its transmission-log concern, were the part still open until the Fedora pass. This app
+> has not itself been launched on the CM5.
 
 ## Notes travel through this repo, not through memory
 
@@ -350,10 +365,11 @@ file, and the app connects, renders the Smith chart and the DataGrid log, and sc
 150% desktop scaling. Sizes: win-x64 100 MB, linux-x64 96 MB, linux-arm64 102 MB (net8/Avalonia 11
 was 90/85/91).
 
-Still open:
-- **linux-x64 / linux-arm64 have only been cross-published, never run.** The CM5 needs a real launch
-  before any release ships on this — it's the one platform where the DBus layer is actually used.
-- **The in-app `UpdateService` round trip is unverified on both changes.** It replaces only the exe,
-  so confirm the self-extracting single file still carries its native libs after an in-place update.
+Both since settled:
+- **linux-x64 ran for real on Fedora 44 on 2026-09-09** — installed, uninstalled, launched into GNOME,
+  connected to the meter; the W2 session's field report there found rendering indistinguishable from
+  Windows. linux-arm64 is the CM5's daily driver for W2, but this app has not been launched on the CM5.
+- **The in-app `UpdateService` round trip was verified on Windows on 2026-09-04** — 1.0.0-beta → beta2
+  → beta3, each applied from Setup, each relaunched copy carrying its native libraries.
 
 Publish size grew about 7% (win-x64 90 MB → 96 MB, linux-x64 85 → 92, linux-arm64 91 → 97).
