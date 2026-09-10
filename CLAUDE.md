@@ -370,7 +370,11 @@ Both since settled:
 - **linux-x64 ran for real on Fedora 44 on 2026-09-09** — installed, uninstalled, launched into GNOME,
   connected to the meter; the W2 session's field report there found rendering indistinguishable from
   Windows. linux-arm64 is the CM5's daily driver for W2, but this app has not been launched on the CM5.
-- **The in-app `UpdateService` round trip was verified on Windows on 2026-09-04** — 1.0.0-beta → beta2
-  → beta3, each applied from Setup, each relaunched copy carrying its native libraries.
+- **The in-app `UpdateService` round trip is verified on both platforms** — Windows on 2026-09-04
+  (1.0.0-beta → beta2 → beta3, each applied from Setup) and Linux on 2026-09-09 (beta3 → beta4 on the
+  Fedora box, applied from Setup). Measured on Fedora over SSH afterwards: the relaunched copy's cwd
+  is the install directory, not the staging one; `/tmp/Lp100aMonitor-update` was removed; and it
+  reconnected to the meter by-id on relaunch — so the two updater fixes from 2026-08 (working directory,
+  staging cleanup) hold on Linux too. Each relaunched copy carried its native libraries.
 
 Publish size grew about 7% (win-x64 90 MB → 96 MB, linux-x64 85 → 92, linux-arm64 91 → 97).
