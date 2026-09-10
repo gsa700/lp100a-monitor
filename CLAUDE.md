@@ -263,8 +263,14 @@ side first** if the two are ever separated.
 > *History:* the W2 port ran the same pattern on the CM5 on 2026-08-02 — install, `.desktop`, icon,
 > symlink, `chmod`, and an uninstall from an installed published build with the script captured before
 > it deleted itself (exactly one `rm -rf`, aimed at the install directory alone). This app's own paths
-> and names, and its transmission-log concern, were the part still open until the Fedora pass. This app
-> has not itself been launched on the CM5.
+> and names, and its transmission-log concern, were the part still open until the Fedora pass.
+>
+> *CM5, same day:* the published linux-arm64 build ran the same cycle on `CM5m` (Compute Module 5,
+> Debian 13, `labwc` + Xwayland, now the basement kiosk at 10.0.1.25): install verified, a 15 s launch
+> into the session at 185 MB with no crash log, clean stop, uninstall with every artifact gone including
+> `~/.net/Lp100aMonitor`. No meter is attached there any more, so serial on arm64 rests on the shared
+> code verified on Fedora; and the probe could not observe a DBus connection (Avalonia connects lazily),
+> so "loads on arm64" is proven and "exercises the DBus layer" is not.
 
 ## Notes travel through this repo, not through memory
 
@@ -369,7 +375,8 @@ was 90/85/91).
 Both since settled:
 - **linux-x64 ran for real on Fedora 44 on 2026-09-09** — installed, uninstalled, launched into GNOME,
   connected to the meter; the W2 session's field report there found rendering indistinguishable from
-  Windows. linux-arm64 is the CM5's daily driver for W2, but this app has not been launched on the CM5.
+  Windows. **linux-arm64 ran on the CM5 the same day** — install, a 15 s launch under `labwc`, uninstall —
+  with no meter attached; see *Self-install* for what that does and does not prove.
 - **The in-app `UpdateService` round trip is verified on both platforms** — Windows on 2026-09-04
   (1.0.0-beta → beta2 → beta3, each applied from Setup) and Linux on 2026-09-09 (beta3 → beta4 on the
   Fedora box, applied from Setup). Measured on Fedora over SSH afterwards: the relaunched copy's cwd
