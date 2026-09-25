@@ -441,9 +441,10 @@ public partial class App : Application
                 _config.LogH = _logWindow.Height;
             }
 
-            var port = _meter.CurrentPort ?? _setupVm.SelectedPort;
-            _config.Port = port;
-            if (port is not null && PortIdentity.SerialFor(port) is { } serial) _config.Serial = serial;
+            // Only a port this run actually connected to may replace the saved pin. Saving the Setup
+            // list's selection re-pinned the meter to a Victron cable in 1.0.0 — see PortPin.
+            (_config.Port, _config.Serial) = PortPin.ForSave(
+                _meter.CurrentPort, PortIdentity.SerialFor, _config.Port, _config.Serial);
             _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
             _config.SetupTab = _setupVm.SelectedTabIndex;
             _config.LogEachTx = _setupVm.LogEachTx;

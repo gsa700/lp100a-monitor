@@ -6,6 +6,19 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` were pre-release: real and in active use, but not yet broadly field-tested.
 `1.0.0` is where that stopped being true.
 
+## [1.0.1] - 2026-09-25
+
+### Fixed
+- **Closing the app with the meter unplugged no longer re-pins it to some other device.** On the
+  way out, the app saved the port showing in Setup's list and overwrote the meter's chip serial with
+  that port's — and with the meter absent, the list had silently pre-selected its first entry. On
+  the Fedora box that was the Victron VE.Direct cable, so the next launch tried to connect to the
+  shunt and would have taken its port from Shack Power the moment that let go. Found the day 1.0.0
+  shipped. Now only a port the app actually connected to can replace the saved pin, and Setup no
+  longer pre-selects a port nobody chose — on a fresh install you pick it, as the README has always
+  said. Windows had the same fault and was spared only because its first port is `COM1`, which has
+  no USB serial to overwrite with.
+
 ## [1.0.0] - 2026-09-25
 
 The same code as 1.0.0-beta4, with the pre-release suffix removed. Nothing is new; this is the point

@@ -211,7 +211,10 @@ public sealed class SetupViewModel : ViewModelBase
         var serials = PortIdentity.GetMap();
         foreach (var p in MeterService.GetPortNames().OrderBy(x => x))
             Ports.Add(new PortOption(p, serials.GetValueOrDefault(p)));
-        SelectedPortOption = (current is not null ? Find(current) : null) ?? Ports.FirstOrDefault();
+        // Keep the selection only if that port is still here; otherwise select nothing. Defaulting
+        // to the first entry is how a Victron cable became "the meter" in 1.0.0 — see PortPin.
+        var keep = PortPin.Reselect(current, Ports.Select(p => p.Port));
+        SelectedPortOption = keep is null ? null : Find(keep);
     }
 
     private void OnReading(Lp100Reading r) => AlarmSetpointText = r.AlarmSetpointText;
