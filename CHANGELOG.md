@@ -3,7 +3,25 @@
 All notable changes to **LP-100A Monitor** are documented here.
 
 This project follows [Semantic Versioning](https://semver.org). Versions below
-`1.0.0` are pre-release: real and in active use, but not yet broadly field-tested.
+`1.0.0` were pre-release: real and in active use, but not yet broadly field-tested.
+`1.0.0` is where that stopped being true.
+
+## [1.0.0] - 2026-09-25
+
+The same code as 1.0.0-beta4, with the pre-release suffix removed. Nothing is new; this is the point
+at which the beta caveat — *real and in use, but not yet broadly field-tested* — stopped being true:
+
+- Every install, update and removal path has run on real hardware on Windows, Fedora 44 (x64) and
+  the Raspberry Pi CM5 (arm64), by hand as well as by script.
+- The meter link recovers on its own from sleep/resume and USB renumbering on both Windows and
+  Linux — including a `ttyUSB6` → `ttyUSB3` renumber at a reboot mid-soak, followed without a hand
+  on it.
+- In daily use on Linux since 9 September with no crash, the last seven days as one continuous run;
+  a fresh remove-and-reinstall of the release candidate on Windows.
+- No known advisories against the dependency graph, transitive included.
+
+Deliberately not changed: dependencies. Newer Avalonia and .NET packages exist, but taking them
+would ship code that has not soaked. They come next.
 
 ## [1.0.0-beta4] - 2026-09-09
 

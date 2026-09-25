@@ -7,7 +7,8 @@ this app — the load impedance (**R + jX**) on a live **Smith chart**.
 
 Runs on Windows, Linux, and Raspberry Pi (arm64).
 
-> Status: **1.0.0-beta4** — real and in use, but not yet broadly field-tested.
+> Status: **1.0.0** — in daily use on Windows and Linux; every install, update and removal path
+> verified on real hardware.
 
 <p align="center">
   <img src="docs/screenshot-all.png" width="900"

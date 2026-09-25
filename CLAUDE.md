@@ -4,7 +4,7 @@ Cross-platform desktop monitor for the TelePost **LP-100A** Digital Vector RF Wa
 Reads the meter over USB serial and shows forward power, SWR, reflected power, return loss,
 dBm, and — the signature feature — the load impedance (**R + jX**) on a live **Smith chart**.
 **.NET 10 + Avalonia 12.1.2**, MVVM. Windows / Linux / Raspberry Pi (arm64). GPLv3.
-By David Erickson (AB0R). Status: **1.0.0-beta4**.
+By David Erickson (AB0R). Status: **1.0.0**.
 
 This app's .NET 10 + Avalonia layout is the reference template for the station tools (the W2
 port follows it).
@@ -383,5 +383,12 @@ Both since settled:
   is the install directory, not the staging one; `/tmp/Lp100aMonitor-update` was removed; and it
   reconnected to the meter by-id on relaunch — so the two updater fixes from 2026-08 (working directory,
   staging cleanup) hold on Linux too. Each relaunched copy carried its native libraries.
+- **The soak before 1.0, 2026-09-09 → 09-25.** beta4 ran on Fedora from the day it shipped, the last
+  seven days as one continuous process, no crash log, and followed a `ttyUSB6` → `ttyUSB3` renumber at
+  the Sep 18 reboot by its by-id pin. **`coredumpctl` on that box lists two `Lp100aMonitor` entries and
+  neither is a soak crash:** 2026-09-09 18:49 was a plain SSH launch with no display (`XOpenDisplay
+  failed` → .NET abort) ten minutes before beta4 existed, and 2026-09-25 is the deliberate reproduction
+  of it, run with a scratch HOME/config. Windows: beta4 installed 09-09, and a Remove → reinstall on
+  09-25 came back on COM4 by chip serial over a stale saved `COM1`. 1.0.0 is beta4's code unchanged.
 
 Publish size grew about 7% (win-x64 90 MB → 96 MB, linux-x64 85 → 92, linux-arm64 91 → 97).
