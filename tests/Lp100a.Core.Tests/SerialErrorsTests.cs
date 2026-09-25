@@ -13,6 +13,21 @@ public class SerialErrorsTests
     }
 
     [Fact]
+    public void LinuxAccessDeniedNamesAnotherProgramBeforeTheGroup()
+    {
+        // System.IO.Ports reports a port held by another process with the same exception as a real
+        // permissions problem. The in-use case is the common one for anyone already in dialout, so it
+        // comes first — sending that operator to usermod is the wrong answer (1.0.1, Shack Power).
+        var msg = SerialErrors.Describe(new UnauthorizedAccessException(), "/dev/ttyUSB0", isLinux: true);
+        var inUse = msg.IndexOf("another program", StringComparison.OrdinalIgnoreCase);
+        var group = msg.IndexOf("dialout", StringComparison.OrdinalIgnoreCase);
+        Assert.True(inUse >= 0, "must mention another program holding the port");
+        Assert.True(group >= 0, "must still say how to fix real permissions");
+        Assert.True(inUse < group, "in-use must be named before the group");
+        Assert.DoesNotContain("Permission denied", msg);
+    }
+
+    [Fact]
     public void WindowsAccessDeniedBlamesAnotherApp()
     {
         var msg = SerialErrors.Describe(new UnauthorizedAccessException(), "COM4", isLinux: false);
@@ -35,6 +50,7 @@ public class SerialErrorsTests
         Assert.Contains("reconnecting", msg, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dialout", msg);
         Assert.DoesNotContain("another app", msg, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("another program", msg, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

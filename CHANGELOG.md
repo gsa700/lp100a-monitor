@@ -6,6 +6,20 @@ This project follows [Semantic Versioning](https://semver.org). Versions below
 `1.0.0` were pre-release: real and in active use, but not yet broadly field-tested.
 `1.0.0` is where that stopped being true.
 
+## [1.0.2] - 2026-09-25
+
+### Fixed
+- **A failed connection attempt no longer counts as a connection when the pin is saved.** 1.0.1 made
+  "only a port the app actually connected to" the rule, but measured that by whether a connection had
+  been *attempted*. Updating from 1.0.0 showed the gap: the old copy's close re-pinned the meter to
+  the Victron cable one last time, the new copy then tried that port at startup, failed — Shack Power
+  holds it — and on its own close saved the bad pin again. It could never walk back a pin it had
+  inherited. The reader now reports the port it actually opened, and only that can be saved.
+- **On Linux, a port held by another program no longer reads as a permissions problem.** .NET reports
+  both with the same exception and the message assumed the rarer one, sending an operator already in
+  `dialout` off to `usermod`. It now says the port is in use or access denied, names another program
+  having it open first, and mentions the group second.
+
 ## [1.0.1] - 2026-09-25
 
 ### Fixed

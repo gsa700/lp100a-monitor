@@ -49,6 +49,12 @@ public sealed class SerialReader : IDisposable
     public event Action<Lp100Reading>? ReadingReceived;
     public event Action<string, bool>? StatusChanged;  // (message, isError)
 
+    /// <summary>
+    /// A port was actually opened, with its name. Unlike a <see cref="Start"/> call this is a
+    /// connection — it fires after the native open succeeds, never for an attempt that failed.
+    /// </summary>
+    public event Action<string>? Opened;
+
     public bool IsRunning => _running;
 
     /// <summary>True once a session has connected, so callers can word a failure as a reconnect.</summary>
@@ -271,6 +277,7 @@ public sealed class SerialReader : IDisposable
             try { port.DiscardInBuffer(); } catch { /* non-fatal */ }
             _everConnected = true;
             Report($"Connected on {portName}", false);
+            try { Opened?.Invoke(portName); } catch { /* subscriber's problem, not ours */ }
 
             var poll = new byte[] { (byte)'P' };
             var buffer = new byte[512];

@@ -19,6 +19,15 @@ public sealed class MeterService : IDisposable
     public Lp100Reading? Current { get; private set; }
     public bool IsConnected { get; private set; }
     public string? CurrentPort { get; private set; }
+
+    /// <summary>
+    /// The port the reader actually opened this run, or null if it never has. This — not
+    /// <see cref="CurrentPort"/> — is what may replace the saved pin. CurrentPort is set the moment
+    /// a connection is <em>attempted</em>, and a failed attempt is not a connection: 1.0.1 counted it
+    /// as one, so a copy that had inherited a bad pin re-saved that pin on every close and could
+    /// never walk it back.
+    /// </summary>
+    public string? OpenedPort { get; private set; }
     public string Status { get; private set; } = "Disconnected";
     public bool StatusIsError { get; private set; }
 
@@ -61,6 +70,8 @@ public sealed class MeterService : IDisposable
             if (IsStale) { IsStale = false; StateChanged?.Invoke(); }
             ReadingReceived?.Invoke(r);
         });
+
+        _reader.Opened += port => Dispatcher.UIThread.Post(() => OpenedPort = port);
 
         _reader.StatusChanged += (msg, isError) => Dispatcher.UIThread.Post(() =>
         {

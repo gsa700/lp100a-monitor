@@ -2,8 +2,11 @@ namespace Lp100a.Core;
 
 /// <summary>
 /// Turns raw serial exceptions into actionable, platform-aware messages. Ported from the W2
-/// monitor. The big one on Linux/Pi is permission denied on /dev/tty* when the user isn't in the
-/// 'dialout' group; on Windows the same exception usually means another app already holds the port.
+/// monitor. On Windows an access-denied usually means another app already holds the port. On
+/// Linux/Pi it is one of two things — the user isn't in the 'dialout' group, or another program has
+/// the port open (System.IO.Ports takes a lock on open and reports a held port with the very same
+/// exception) — and the message has to name both, the in-use case first: an operator already in
+/// the group was sent off to usermod when the real answer was "Shack Power has it" (1.0.1).
 /// </summary>
 public static class SerialErrors
 {
@@ -20,8 +23,9 @@ public static class SerialErrors
         return ex switch
         {
             UnauthorizedAccessException when isLinux =>
-                $"Permission denied on {port}. Add your user to the 'dialout' group: " +
-                "sudo usermod -aG dialout $USER  (then log out and back in).",
+                $"{port} is in use or access denied — if another program has it open, close that. " +
+                "Otherwise add your user to the 'dialout' group: sudo usermod -aG dialout $USER " +
+                "(then log out and back in).",
             UnauthorizedAccessException =>
                 $"{port} is in use or access denied — another app may have it open.",
             FileNotFoundException =>

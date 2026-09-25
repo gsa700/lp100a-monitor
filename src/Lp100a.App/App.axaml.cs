@@ -443,8 +443,9 @@ public partial class App : Application
 
             // Only a port this run actually connected to may replace the saved pin. Saving the Setup
             // list's selection re-pinned the meter to a Victron cable in 1.0.0 — see PortPin.
+            // OpenedPort, not CurrentPort: an attempt that never opened the port is not a connection.
             (_config.Port, _config.Serial) = PortPin.ForSave(
-                _meter.CurrentPort, PortIdentity.SerialFor, _config.Port, _config.Serial);
+                _meter.OpenedPort, PortIdentity.SerialFor, _config.Port, _config.Serial);
             _config.CheckUpdatesAtStartup = _setupVm.CheckUpdatesAtStartup;
             _config.SetupTab = _setupVm.SelectedTabIndex;
             _config.LogEachTx = _setupVm.LogEachTx;
